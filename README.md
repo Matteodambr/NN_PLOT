@@ -1,9 +1,20 @@
 # NN_PLOT
-Repo for custom neural network visualization
 
 ## Overview
 
-NN_PLOT is a Python module for representing and visualizing neural network architectures. It provides a flexible class structure to model both linear (sequential) and non-linear (branching) neural network topologies with beautiful, customizable visualizations.
+NN_PLOT is a Python module for representing and visualizing neural network architectures. It provides a flexible class structure to model both linear (sequential) and non-linear (branching) neural network topologies with highly customizable visualizations.
+
+<table>
+<tr>
+<td align="center" valign="middle">
+  <img src="https://github.com/user-attachments/assets/8bcbd894-6627-4036-86e5-ee85815e0034" width="422" height="1070" />
+</td>
+<td align="center" valign="middle">
+  <img src="https://github.com/user-attachments/assets/954baf6d-83ce-48f2-9655-bdcb80e54f1c" width="422" height="1070" />
+</td>
+</tr>
+</table>
+
 
 ## Features
 
@@ -754,3 +765,4 @@ See `PlottedNetworks/README.md` for details on adding new paper directories.
 ## License
 
 See LICENSE file for details.
+
