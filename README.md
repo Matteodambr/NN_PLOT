@@ -1,8 +1,8 @@
-# NN_PLOT
+# NeuralNet - Visualizer
 
 ## Overview
 
-NN_PLOT is a Python module for representing and visualizing neural network architectures. It provides a flexible class structure to model both linear (sequential) and non-linear (branching) neural network topologies with highly customizable visualizations.
+NeuralNet - Visualizer is a Python module for representing and visualizing custom neural network architectures. It provides a flexible class structure to model both linear (sequential) and non-linear (branching) neural network topologies with highly customizable visualizations.
 
 <table>
 <tr>
@@ -765,4 +765,5 @@ See `PlottedNetworks/README.md` for details on adding new paper directories.
 ## License
 
 See LICENSE file for details.
+
 
