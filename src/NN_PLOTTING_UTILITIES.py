@@ -68,6 +68,38 @@ class LayerStyle:
 
 
 @dataclass
+class LayerGroup:
+    """
+    Configuration for grouping multiple layers with a bracket and label.
+    
+    This allows you to visually group layers (e.g., "Encoder", "Decoder") with a
+    bracket displayed below the layers and a descriptive label.
+    
+    Attributes:
+        layer_ids: List of layer IDs or layer names to group together
+        label: Text label to display below the bracket
+        bracket_style: Style of bracket ('curly', 'square', 'straight')
+        bracket_color: Color of the bracket lines
+        bracket_linewidth: Width/thickness of the bracket lines
+        label_fontsize: Font size for the group label text
+        label_color: Color of the group label text
+        y_offset: Vertical distance below the layers to position the bracket (in plot units)
+        bracket_height: Height of the bracket curves/corners (in plot units)
+        additional_spacing: Additional spacing below layer labels (if layer names are shown)
+    """
+    layer_ids: List[str]
+    label: str
+    bracket_style: str = 'curly'
+    bracket_color: str = 'black'
+    bracket_linewidth: float = 2.0
+    label_fontsize: int = 12
+    label_color: str = 'black'
+    y_offset: float = -1.5
+    bracket_height: float = 0.3
+    additional_spacing: float = 0.8
+
+
+@dataclass
 class PlotConfig:
     """
     Configuration for neural network plotting.
@@ -103,6 +135,7 @@ class PlotConfig:
                      Use this to apply layer-specific styling including rounded boxes.
         background_color: Background color for the plot. Use 'transparent' for transparent background,
                          'white' for white, or any matplotlib color (hex, rgb, named colors).
+        layer_groups: List of LayerGroup objects for grouping layers with brackets and labels at the bottom
                          Default is 'transparent'.
         layer_spacing_multiplier: Multiplier for the overall network width. Values > 1.0 increase
                                  spacing between layers proportionally, making the network wider.
@@ -149,6 +182,8 @@ class PlotConfig:
         layer_names_brace_width_multiplier: Multiplier for the width of horizontal_line and brace styles.
                                             Values > 1.0 make braces wider, < 1.0 make them narrower.
                                             Default is 1.0 (spans the layer width plus small margins).
+        layer_names_brace_height: Height of the curly brace (in plot units) for single-layer braces.
+                                  Default is 0.15. Increase for taller braces, decrease for shorter ones.
         layer_names_brace_label_offset: Distance (in plot units) between the layer name text and the brace/line.
                                         Default is 0.5. Increase for more spacing, decrease for tighter layout.
         font_family: Font family to use for all text in the plot (including math text).
@@ -198,8 +233,10 @@ class PlotConfig:
     layer_names_show_box: bool = True
     layer_names_line_styles: List[str] = field(default_factory=list)
     layer_names_line_color: str = 'black'
+    layer_groups: List[LayerGroup] = field(default_factory=list)
     layer_names_line_width: float = 1.0
     layer_names_brace_width_multiplier: float = 1.0
+    layer_names_brace_height: float = 0.15
     layer_names_brace_label_offset: float = 0.5
     font_family: str = 'Times New Roman'
 
@@ -343,6 +380,10 @@ class NetworkPlotter:
         # Add variable names for layers
         if self.config.show_layer_variable_names and self.config.layer_variable_names:
             self._add_layer_variable_names(ax, network)
+        
+        # Draw layer groups (brackets and labels)
+        if self.config.layer_groups:
+            self._draw_layer_groups(ax, network)
         
         # Set title (if enabled)
         if self.config.show_title:
@@ -980,6 +1021,33 @@ class NetworkPlotter:
         # Add extra padding for boxes
         total_padding = padding + max_box_padding
         
+        # Account for layer group brackets if present
+        if self.config.layer_groups:
+            # Calculate how much space the group brackets need below
+            if self.config.show_layer_names:
+                # Estimate space needed for layer labels + group brackets + group labels
+                estimated_label_lines = 1
+                if self.config.layer_names_show_dim:
+                    estimated_label_lines += 1
+                if self.config.layer_names_show_activation:
+                    estimated_label_lines += 1
+                
+                layer_label_height = estimated_label_lines * 0.4
+                max_spacing = max(group.additional_spacing for group in self.config.layer_groups)
+                max_bracket_height = max(group.bracket_height for group in self.config.layer_groups)
+                group_label_space = 0.8  # Space for group label text
+                
+                # Total space needed below
+                extra_bottom_space = layer_label_height + max_spacing + max_bracket_height + group_label_space + 1.0
+            else:
+                # Without layer names, use y_offset and bracket height
+                max_bracket_height = max(group.bracket_height for group in self.config.layer_groups)
+                group_label_space = 0.8
+                extra_bottom_space = abs(self.config.layer_groups[0].y_offset) + max_bracket_height + group_label_space + 0.5
+            
+            # Adjust y_min to include this space
+            y_min = y_min - extra_bottom_space
+        
         ax.set_xlim(x_min - total_padding, x_max + total_padding)
         ax.set_ylim(y_min - total_padding, y_max + total_padding)
     
@@ -1197,10 +1265,7 @@ class NetworkPlotter:
                     
                     # Draw curly brace if requested
                     if 'curly_brace' in self.config.layer_names_line_styles:
-                        # Draw an actual curly brace using path
-                        import matplotlib.path as mpath
-                        import matplotlib.patches as mpatches
-                        
+                        # Use unified curly brace method
                         margin = 0.15
                         base_width = (layer_right + self.config.neuron_radius + margin) - (layer_left - self.config.neuron_radius - margin)
                         adjusted_width = base_width * self.config.layer_names_brace_width_multiplier
@@ -1209,59 +1274,15 @@ class NetworkPlotter:
                         brace_right = center_x + adjusted_width / 2
                         brace_y = label_y + self.config.layer_names_brace_label_offset
                         
-                        # Create a curly brace path with proper curved tips
-                        height = 0.15  # Total height of the brace
-                        curl_width = 0.1  # Width of the end curls
+                        # Use configurable height
+                        height = self.config.layer_names_brace_height
                         
-                        # Calculate quarter points for the brace
-                        quarter = adjusted_width / 4
-                        
-                        # Define vertices for a proper curly brace with curved tips
-                        verts = [
-                            # Left side - start with outward curl at top
-                            (brace_left, brace_y),  # Left endpoint
-                            (brace_left - curl_width * 0.3, brace_y - height * 0.15),  # Curl out control
-                            (brace_left + curl_width * 0.5, brace_y - height * 0.3),  # Curl in control
-                            (brace_left + quarter * 0.8, brace_y - height * 0.45),  # Quarter point
-                            # Approach middle from left
-                            (center_x - quarter * 0.3, brace_y - height * 0.7),  # Control
-                            (center_x - curl_width * 0.5, brace_y - height * 0.9),  # Control near tip
-                            (center_x, brace_y - height),  # Middle tip (pointing down)
-                            # Leave middle to right
-                            (center_x + curl_width * 0.5, brace_y - height * 0.9),  # Control near tip
-                            (center_x + quarter * 0.3, brace_y - height * 0.7),  # Control
-                            (brace_right - quarter * 0.8, brace_y - height * 0.45),  # Quarter point
-                            # Right side - end with outward curl at top
-                            (brace_right - curl_width * 0.5, brace_y - height * 0.3),  # Curl in control
-                            (brace_right + curl_width * 0.3, brace_y - height * 0.15),  # Curl out control
-                            (brace_right, brace_y),  # Right endpoint
-                        ]
-                        
-                        codes = [
-                            mpath.Path.MOVETO,    # Start at left
-                            mpath.Path.CURVE4,    # Control 1 for left curl
-                            mpath.Path.CURVE4,    # Control 2 for left curl
-                            mpath.Path.CURVE4,    # Endpoint quarter
-                            mpath.Path.CURVE4,    # Control 1 to middle
-                            mpath.Path.CURVE4,    # Control 2 to middle
-                            mpath.Path.CURVE4,    # Middle tip
-                            mpath.Path.CURVE4,    # Control 1 from middle
-                            mpath.Path.CURVE4,    # Control 2 from middle
-                            mpath.Path.CURVE4,    # Endpoint quarter
-                            mpath.Path.CURVE4,    # Control 1 for right curl
-                            mpath.Path.CURVE4,    # Control 2 for right curl
-                            mpath.Path.CURVE4,    # End at right
-                        ]
-                        
-                        path = mpath.Path(verts, codes)
-                        patch = mpatches.PathPatch(
-                            path,
-                            facecolor='none',
-                            edgecolor=self.config.layer_names_line_color,
-                            linewidth=self.config.layer_names_line_width,
-                            zorder=1
+                        self._draw_curly_brace(
+                            ax, brace_left, brace_right, brace_y,
+                            self.config.layer_names_line_color,
+                            self.config.layer_names_line_width,
+                            height
                         )
-                        ax.add_patch(patch)
     
     def _add_layer_variable_names(self, ax: plt.Axes, network: NeuralNetwork) -> None:
         """Add variable name labels to specified layers."""
@@ -1343,6 +1364,259 @@ class NetworkPlotter:
                 bbox=dict(boxstyle='round,pad=0.6', facecolor='lightgray', alpha=0.7, edgecolor='black'),
                 zorder=13
             )
+    
+    def _draw_layer_groups(self, ax: plt.Axes, network: NeuralNetwork) -> None:
+        """
+        Draw brackets and labels to group multiple layers together.
+        
+        This creates visual groupings at the bottom of the plot with brackets
+        (curly, square, round, or straight) and descriptive labels.
+        All brackets are drawn at the same height.
+        """
+        if not self.config.layer_groups:
+            return
+        
+        # Step 1: Calculate the common y-position for ALL group brackets
+        if self.config.show_layer_names:
+            # Position below layer labels
+            if self.config.layer_names_align_bottom:
+                # All labels are at same height
+                min_y = float('inf')
+                for lid, positions in self.neuron_positions.items():
+                    if positions:
+                        layer_bottom = min(pos[1] for pos in positions)
+                        min_y = min(min_y, layer_bottom)
+                label_y = min_y - self.config.layer_names_bottom_offset
+            else:
+                # Labels are at different heights, find the lowest across ALL layers
+                label_y = float('inf')
+                for lid in self.neuron_positions.keys():
+                    if lid in self.layer_positions:
+                        layer_y = self.layer_positions[lid][1]
+                        positions = self.neuron_positions[lid]
+                        individual_label_y = layer_y - (len(positions) * self.config.neuron_spacing / 2) - 1.5
+                        label_y = min(label_y, individual_label_y)
+            
+            # Estimate label height based on configuration
+            estimated_label_lines = 1  # Start with custom name or type
+            if self.config.layer_names_show_dim:
+                estimated_label_lines += 1
+            if self.config.layer_names_show_activation:
+                estimated_label_lines += 1
+            
+            label_height = estimated_label_lines * 0.4  # Approximate line height
+            
+            # Use the maximum additional_spacing from all groups
+            max_spacing = max(group.additional_spacing for group in self.config.layer_groups)
+            common_y_bracket = label_y - label_height - max_spacing
+        else:
+            # No layer labels shown, position below the lowest neuron across ALL layers
+            all_y_positions = []
+            for positions in self.neuron_positions.values():
+                for _, y in positions:
+                    all_y_positions.append(y)
+            
+            # Use the y_offset from the first group (or could use min/max)
+            y_offset = self.config.layer_groups[0].y_offset if self.config.layer_groups else -1.5
+            common_y_bracket = min(all_y_positions) + y_offset
+        
+        # Step 2: Draw each group's bracket at the common y-position
+        for group in self.config.layer_groups:
+            # Collect layer information for the group
+            layer_data = []  # List of (x_position, layer_id)
+            
+            for layer_id in group.layer_ids:
+                found = False
+                # Try to find by ID first
+                if layer_id in self.neuron_positions:
+                    positions = self.neuron_positions[layer_id]
+                    if positions:
+                        layer_data.append((positions[0][0], layer_id))
+                        found = True
+                
+                # If not found by ID, try to find by layer name
+                if not found:
+                    for lid, layer in network.layers.items():
+                        if layer.name == layer_id and lid in self.neuron_positions:
+                            positions = self.neuron_positions[lid]
+                            if positions:
+                                layer_data.append((positions[0][0], lid))
+                                break
+            
+            if len(layer_data) < 1:
+                continue  # Skip if no valid layers found
+            
+            # Sort by x-position to get correct left-to-right order
+            layer_data.sort(key=lambda item: item[0])
+            
+            # Calculate proper span for each layer (accounting for neuron radius and margins)
+            margin = 0.15
+            brace_width_mult = self.config.layer_names_brace_width_multiplier
+            
+            layer_spans = []
+            for center_x, lid in layer_data:
+                # Get neuron positions for this layer to determine layer width
+                if lid in self.neuron_positions:
+                    positions = self.neuron_positions[lid]
+                    if positions:
+                        layer_left = min(pos[0] for pos in positions)
+                        layer_right = max(pos[0] for pos in positions)
+                        
+                        # Calculate span like single-layer brackets do
+                        base_width = (layer_right + self.config.neuron_radius + margin) - \
+                                   (layer_left - self.config.neuron_radius - margin)
+                        adjusted_width = base_width * brace_width_mult
+                        span_left = center_x - adjusted_width / 2
+                        span_right = center_x + adjusted_width / 2
+                        layer_spans.append((span_left, span_right))
+            
+            if not layer_spans:
+                continue  # Skip if no valid spans
+            
+            # Get the leftmost and rightmost edges of all layer spans
+            x_min = min(span[0] for span in layer_spans)
+            x_max = max(span[1] for span in layer_spans)
+            
+            # Draw the bracket at the common y-position
+            self._draw_bracket(
+                ax,
+                x_min, x_max, common_y_bracket,
+                style=group.bracket_style,
+                color=group.bracket_color,
+                linewidth=group.bracket_linewidth,
+                height=group.bracket_height
+            )
+            
+            # Add the label below the bracket
+            # Position label below bracket, accounting for bracket height and adding spacing
+            label_x = (x_min + x_max) / 2
+            label_spacing = 0.3  # Additional spacing between bracket and label
+            label_y = common_y_bracket - group.bracket_height - label_spacing
+            
+            ax.text(
+                label_x, label_y, group.label,
+                ha='center', va='top',
+                fontsize=group.label_fontsize,
+                color=group.label_color,
+                fontweight='bold',
+                zorder=10
+            )
+    
+    
+    def _draw_curly_brace(self, ax: plt.Axes, x_min: float, x_max: float, y: float,
+                          color: str, linewidth: float, height: float) -> None:
+        """
+        Draw a curly brace using matplotlib paths (unified implementation).
+        
+        Args:
+            ax: Matplotlib axes
+            x_min: Left x-coordinate
+            x_max: Right x-coordinate
+            y: Y-coordinate for the bracket baseline (top of bracket)
+            color: Color of the bracket
+            linewidth: Width of the bracket lines
+            height: Height of bracket (extends downward from y)
+        """
+        import matplotlib.path as mpath
+        import matplotlib.patches as mpatches
+        
+        width = x_max - x_min
+        center_x = (x_min + x_max) / 2
+        
+        # Curl dimensions - scale with both width and height to avoid gaps in short brackets
+        curl_width = min(0.1, width * 0.1, height * 0.6)  # Also constrain by height
+        
+        # Calculate quarter points for the brace
+        quarter = width / 4
+        
+        # Define vertices for a proper curly brace with curved tips
+        # Adjusted for higher outer edges and pointier center
+        # Each CURVE4 needs: start point (from previous), control1, control2, endpoint
+        verts = [
+            # === Segment 1: Left curl (from left endpoint to first quarter) ===
+            (x_min, y),  # MOVETO: Left endpoint (start)
+            (x_min - curl_width * 0.3, y - height * 0.10),  # CURVE4: Control point 1
+            (x_min + curl_width * 0.4, y - height * 0.25),  # CURVE4: Control point 2 (reduced from 0.5)
+            (x_min + quarter * 0.8, y - height * 0.40),  # CURVE4: End point (first quarter)
+            
+            # === Segment 2: Left to middle (from first quarter to center tip) ===
+            (center_x - quarter * 0.3, y - height * 0.70),  # CURVE4: Control point 1
+            (center_x - curl_width * 0.25, y - height * 0.95),  # CURVE4: Control point 2 (reduced from 0.3)
+            (center_x, y - height),  # CURVE4: End point (center tip)
+            
+            # === Segment 3: Middle to right (from center tip to last quarter) ===
+            (center_x + curl_width * 0.25, y - height * 0.95),  # CURVE4: Control point 1 (reduced from 0.3)
+            (center_x + quarter * 0.3, y - height * 0.70),  # CURVE4: Control point 2
+            (x_max - quarter * 0.8, y - height * 0.40),  # CURVE4: End point (last quarter)
+            
+            # === Segment 4: Right curl (from last quarter to right endpoint) ===
+            (x_max - curl_width * 0.4, y - height * 0.25),  # CURVE4: Control point 1 (reduced from 0.5)
+            (x_max + curl_width * 0.3, y - height * 0.10),  # CURVE4: Control point 2
+            (x_max, y),  # CURVE4: End point (right endpoint)
+        ]
+        
+        codes = [
+            mpath.Path.MOVETO,    # Segment 1: Start at left endpoint
+            mpath.Path.CURVE4,    # Segment 1: Control point 1
+            mpath.Path.CURVE4,    # Segment 1: Control point 2
+            mpath.Path.CURVE4,    # Segment 1: End at first quarter
+            mpath.Path.CURVE4,    # Segment 2: Control point 1
+            mpath.Path.CURVE4,    # Segment 2: Control point 2
+            mpath.Path.CURVE4,    # Segment 2: End at center tip
+            mpath.Path.CURVE4,    # Segment 3: Control point 1
+            mpath.Path.CURVE4,    # Segment 3: Control point 2
+            mpath.Path.CURVE4,    # Segment 3: End at last quarter
+            mpath.Path.CURVE4,    # Segment 4: Control point 1
+            mpath.Path.CURVE4,    # Segment 4: Control point 2
+            mpath.Path.CURVE4,    # Segment 4: End at right endpoint
+        ]
+        
+        path = mpath.Path(verts, codes)
+        patch = mpatches.PathPatch(
+            path,
+            facecolor='none',
+            edgecolor=color,
+            linewidth=linewidth,
+            capstyle='round',  # Smooth line endings
+            joinstyle='round',  # Smooth connections between segments
+            zorder=10
+        )
+        ax.add_patch(patch)
+    
+    def _draw_bracket(self, ax: plt.Axes, x_min: float, x_max: float, y: float,
+                      style: str, color: str, linewidth: float, height: float) -> None:
+        """
+        Draw a bracket of specified style.
+        
+        Args:
+            ax: Matplotlib axes
+            x_min: Left x-coordinate
+            x_max: Right x-coordinate
+            y: Y-coordinate for the bracket baseline (top of bracket)
+            style: 'curly', 'square', 'round', or 'straight'
+            color: Color of the bracket
+            linewidth: Width of the bracket lines
+            height: Height of bracket curves/corners (extends downward from y)
+        """
+        import numpy as np
+        
+        if style == 'curly':
+            # Use unified curly brace implementation
+            self._draw_curly_brace(ax, x_min, x_max, y, color, linewidth, height)
+            
+        elif style == 'square':
+            # Square bracket hanging down: ⎡___⎤ shape
+            ax.plot([x_min, x_min], [y, y - height], color=color, linewidth=linewidth, zorder=10)
+            ax.plot([x_min, x_max], [y - height, y - height], color=color, linewidth=linewidth, zorder=10)
+            ax.plot([x_max, x_max], [y - height, y], color=color, linewidth=linewidth, zorder=10)
+            
+        elif style == 'straight':
+            # Simple straight line at the baseline
+            ax.plot([x_min, x_max], [y, y], color=color, linewidth=linewidth, zorder=10)
+        
+        else:
+            # Default to straight if unknown style
+            ax.plot([x_min, x_max], [y, y], color=color, linewidth=linewidth, zorder=10)
 
 
 # Convenience function for quick plotting
