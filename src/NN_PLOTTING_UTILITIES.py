@@ -47,6 +47,7 @@ class LayerStyle:
         show_type: Override global layer_names_show_type for this layer (None uses global setting)
         show_dim: Override global layer_names_show_dim for this layer (None uses global setting)
         show_activation: Override global layer_names_show_activation for this layer (None uses global setting)
+        neuron_text_label_alignment: Override global alignment for this layer's neuron labels ('left', 'center', 'right', or None for global)
     """
     neuron_fill_color: Optional[str] = None
     neuron_edge_color: Optional[str] = None
@@ -63,6 +64,7 @@ class LayerStyle:
     show_type: Optional[bool] = None
     show_dim: Optional[bool] = None
     show_activation: Optional[bool] = None
+    neuron_text_label_alignment: Optional[str] = None
 
 
 @dataclass
@@ -88,6 +90,7 @@ class PlotConfig:
         show_neuron_text_labels: Whether to show custom text labels (from layer.neuron_labels)
         neuron_text_label_fontsize: Font size for custom neuron text labels
         neuron_text_label_offset: Horizontal offset from neuron center for text labels
+        neuron_text_label_alignment: Text alignment for neuron labels ('left', 'center', or 'right')
         show_layer_names: Whether to show layer names
         show_title: Whether to show the plot title
         title_fontsize: Font size for plot title
@@ -166,6 +169,7 @@ class PlotConfig:
     show_neuron_text_labels: bool = True
     neuron_text_label_fontsize: int = 10
     neuron_text_label_offset: float = 0.8
+    neuron_text_label_alignment: str = 'center'
     show_layer_names: bool = True
     show_title: bool = True
     title_fontsize: int = 16
@@ -752,14 +756,24 @@ class NetworkPlotter:
                         label_text = layer.neuron_labels[label_index]
                         
                         # Use pre-calculated label position with center alignment
-                        # All labels in the same layer align at the same vertical line,
-                        # centered horizontally on that line
+                        # All labels in the same layer align at the same vertical line
                         label_x = layer_label_x
                         
-                        # Draw the text label with LaTeX support (always center-aligned)
+                        # Determine horizontal alignment: check layer-specific first, then global
+                        alignment = self.config.neuron_text_label_alignment
+                        
+                        # Check for layer-specific alignment override
+                        layer_style = self._get_layer_style(layer_id, layer.name)
+                        if layer_style and layer_style.neuron_text_label_alignment is not None:
+                            alignment = layer_style.neuron_text_label_alignment
+                        
+                        if alignment not in ['left', 'center', 'right']:
+                            alignment = 'center'  # Default to center if invalid
+                        
+                        # Draw the text label with LaTeX support
                         ax.text(
                             label_x, y, label_text,
-                            ha='center', va='center',
+                            ha=alignment, va='center',
                             fontsize=self.config.neuron_text_label_fontsize,
                             zorder=11
                         )
