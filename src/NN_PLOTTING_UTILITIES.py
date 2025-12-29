@@ -48,6 +48,12 @@ class LayerStyle:
         show_dim: Override global layer_names_show_dim for this layer (None uses global setting)
         show_activation: Override global layer_names_show_activation for this layer (None uses global setting)
         neuron_text_label_alignment: Override global alignment for this layer's neuron labels ('left', 'center', 'right', or None for global)
+        max_neurons_to_plot: Override global max_neurons_per_layer for this layer (None uses global setting)
+        collapse_neurons_start: Override global collapse_neurons_start for this layer (None uses global setting)
+        collapse_neurons_end: Override global collapse_neurons_end for this layer (None uses global setting)
+        layer_name_bold: If True, make the first line of layer name (the custom name) bold (None uses global setting)
+        variable_name_color: Color for variable name label (None uses default gray box)
+        box_include_neuron_labels: If True, extend the box to include neuron text labels (in the label direction)
     """
     neuron_fill_color: Optional[str] = None
     neuron_edge_color: Optional[str] = None
@@ -65,6 +71,12 @@ class LayerStyle:
     show_dim: Optional[bool] = None
     show_activation: Optional[bool] = None
     neuron_text_label_alignment: Optional[str] = None
+    max_neurons_to_plot: Optional[int] = None
+    collapse_neurons_start: Optional[int] = None
+    collapse_neurons_end: Optional[int] = None
+    layer_name_bold: Optional[bool] = None
+    variable_name_color: Optional[str] = None
+    box_include_neuron_labels: bool = False  # If True, extend box to include neuron text labels
 
 
 @dataclass
@@ -525,12 +537,24 @@ class NetworkPlotter:
             else:
                 actual_neurons = layer.get_output_size()
             
+            # Get collapse settings (check layer-specific first, then global)
+            layer_style = self._get_layer_style(layer_id, layer.name)
+            max_n = self.config.max_neurons_per_layer
+            show_start = self.config.collapse_neurons_start
+            show_end = self.config.collapse_neurons_end
+            
+            if layer_style:
+                if layer_style.max_neurons_to_plot is not None:
+                    max_n = layer_style.max_neurons_to_plot
+                if layer_style.collapse_neurons_start is not None:
+                    show_start = layer_style.collapse_neurons_start
+                if layer_style.collapse_neurons_end is not None:
+                    show_end = layer_style.collapse_neurons_end
+            
             # Check if we need to collapse this layer
-            if actual_neurons > self.config.max_neurons_per_layer:
+            if actual_neurons > max_n:
                 self.collapsed_layers[layer_id] = True
                 # Use configured collapse distribution
-                show_start = self.config.collapse_neurons_start
-                show_end = self.config.collapse_neurons_end
                 
                 # Store collapse info
                 self.collapsed_info[layer_id] = {
@@ -581,11 +605,23 @@ class NetworkPlotter:
                 else:
                     actual_neurons = layer.get_output_size()
                 
+                # Get collapse settings (check layer-specific first, then global)
+                layer_style = self._get_layer_style(layer_id, layer.name)
+                max_n = self.config.max_neurons_per_layer
+                show_start = self.config.collapse_neurons_start
+                show_end = self.config.collapse_neurons_end
+                
+                if layer_style:
+                    if layer_style.max_neurons_to_plot is not None:
+                        max_n = layer_style.max_neurons_to_plot
+                    if layer_style.collapse_neurons_start is not None:
+                        show_start = layer_style.collapse_neurons_start
+                    if layer_style.collapse_neurons_end is not None:
+                        show_end = layer_style.collapse_neurons_end
+                
                 # Check if we need to collapse this layer
-                if actual_neurons > self.config.max_neurons_per_layer:
+                if actual_neurons > max_n:
                     self.collapsed_layers[layer_id] = True
-                    show_start = self.config.collapse_neurons_start
-                    show_end = self.config.collapse_neurons_end
                     
                     self.collapsed_info[layer_id] = {
                         'actual_count': actual_neurons,
@@ -775,22 +811,27 @@ class NetworkPlotter:
                     layer.neuron_labels is not None and
                     not (is_collapsed and i == dots_position)):
                     
-                    # Calculate actual neuron index for collapsed layers
-                    if is_collapsed:
-                        collapse_info = self.collapsed_info[layer_id]
-                        if i < dots_position:
-                            # First few neurons
-                            label_index = i
+                    # Determine label index based on whether labels array matches visible or total neurons
+                    if len(layer.neuron_labels) == layer.num_neurons:
+                        # Full array of labels - index by actual neuron position in the layer
+                        if is_collapsed:
+                            collapse_info = self.collapsed_info[layer_id]
+                            if i < dots_position:
+                                # First few neurons (top of layer)
+                                label_index = i
+                            else:
+                                # Last few neurons (bottom of layer, after the dots)
+                                # Map to the end of the labels array
+                                label_index = layer.num_neurons - (len(positions) - i)
                         else:
-                            # Last few neurons (after the dots)
-                            label_index = collapse_info['actual_count'] - (len(positions) - i - 1)
+                            label_index = i
                     else:
-                        label_index = i
-                    
-                    # Apply numbering direction to label index
-                    if self.config.neuron_numbering_reversed:
-                        total_neurons = layer.num_neurons
-                        label_index = total_neurons - 1 - label_index
+                        # Labels for visible neurons only - index by visible position
+                        # Skip the dots position when counting
+                        if is_collapsed and i > dots_position:
+                            label_index = i - 1  # Account for dots position
+                        else:
+                            label_index = i
                     
                     # Get the text label for this neuron
                     if 0 <= label_index < len(layer.neuron_labels):
@@ -849,6 +890,46 @@ class NetworkPlotter:
             max_x += padding
             min_y -= padding
             max_y += padding
+            
+            # Extend box to include neuron labels if requested
+            if layer_style.box_include_neuron_labels and isinstance(layer, FullyConnectedLayer):
+                if layer.neuron_labels is not None and self.config.show_neuron_text_labels:
+                    # Labels are positioned at neuron_text_label_offset from neuron center
+                    # Box already includes neuron_radius + padding from center
+                    
+                    # Estimate visual text width based on longest label
+                    # Strip LaTeX commands that don't contribute to visual width
+                    import re
+                    def visual_length(s):
+                        # Remove $ delimiters
+                        s = s.replace('$', '')
+                        # Remove common LaTeX commands like \hat, \bar, \tilde, etc.
+                        s = re.sub(r'\\[a-zA-Z]+', '', s)
+                        # Remove braces
+                        s = s.replace('{', '').replace('}', '')
+                        # Remove underscores and carets (subscript/superscript markers)
+                        s = s.replace('_', '').replace('^', '')
+                        return len(s)
+                    
+                    fontsize_in_points = self.config.neuron_text_label_fontsize
+                    char_width = fontsize_in_points * 0.015  # Estimate for rendered math
+                    max_visual_len = max(visual_length(str(lbl)) for lbl in layer.neuron_labels) if layer.neuron_labels else 0
+                    text_width = max_visual_len * char_width
+                    
+                    # Small fixed margin for readability
+                    margin = 0.1
+                    
+                    # The label is centered at neuron_text_label_offset from neuron center
+                    total_label_extent = self.config.neuron_text_label_offset + text_width / 2 + margin
+                    current_box_extent = self.config.neuron_radius + padding
+                    
+                    extra_extension = max(0, total_label_extent - current_box_extent)
+                    
+                    # Extend box in the direction of the labels
+                    if layer.label_position == "left":
+                        min_x -= extra_extension
+                    else:  # "right"
+                        max_x += extra_extension
             
             # Calculate box dimensions
             width = max_x - min_x
@@ -1115,8 +1196,6 @@ class NetworkPlotter:
             if show_dim:
                 if isinstance(layer, FullyConnectedLayer):
                     dim_text = f"Dim.: {layer.num_neurons}"
-                    if layer.num_neurons > self.config.max_neurons_per_layer:
-                        dim_text += f" [showing {self.config.max_neurons_per_layer}]"
                     label_parts.append(dim_text)
                 else:
                     label_parts.append(f"Dim.: {layer.get_output_size()}")
@@ -1139,6 +1218,15 @@ class NetworkPlotter:
             else:
                 label = "\n".join(label_parts)
             
+            # Check if first line should be bold
+            layer_style = self._get_layer_style(layer_id, layer.name)
+            use_bold = False
+            if layer_style and layer_style.layer_name_bold is not None:
+                use_bold = layer_style.layer_name_bold
+            
+            # Determine font weight
+            fontweight = 'bold' if use_bold else 'normal'
+            
             # Position label below the layer
             if self.config.layer_names_align_bottom:
                 # Find the minimum y position across all layers to align at bottom
@@ -1160,6 +1248,7 @@ class NetworkPlotter:
                 label,
                 ha='center', va='top',
                 fontsize=self.config.layer_name_fontsize,
+                fontweight=fontweight,
                 bbox=bbox_props,
                 zorder=12
             )
@@ -1354,6 +1443,11 @@ class NetworkPlotter:
                     label_y = y + layer_height / 2 + vertical_offset + box_offset
                     ha, va = 'center', 'bottom'
             
+            # Determine bbox color from layer style or use default
+            bbox_color = 'lightgray'
+            if layer_style and layer_style.variable_name_color is not None:
+                bbox_color = layer_style.variable_name_color
+            
             ax.text(
                 label_x, label_y,
                 variable_label,
@@ -1361,7 +1455,7 @@ class NetworkPlotter:
                 fontsize=self.config.layer_variable_names_fontsize,
                 fontweight='bold',
                 multialignment=self.config.layer_variable_names_multialignment,
-                bbox=dict(boxstyle='round,pad=0.6', facecolor='lightgray', alpha=0.7, edgecolor='black'),
+                bbox=dict(boxstyle='round,pad=0.6', facecolor=bbox_color, alpha=0.7, edgecolor='black'),
                 zorder=13
             )
     
