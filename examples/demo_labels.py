@@ -7,6 +7,9 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
+import matplotlib
+matplotlib.use('Agg')  # Use non-interactive backend
+
 from NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer
 from NN_PLOTTING_UTILITIES import plot_network, PlotConfig, LayerStyle
 
