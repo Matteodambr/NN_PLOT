@@ -44,6 +44,9 @@ class LayerStyle:
         box_edge_width: Width of the box edge
         box_padding: Padding around neurons inside the box (in plot units)
         box_corner_radius: Corner radius for the rounded box (in plot units)
+        show_type: Override global layer_names_show_type for this layer (None uses global setting)
+        show_dim: Override global layer_names_show_dim for this layer (None uses global setting)
+        show_activation: Override global layer_names_show_activation for this layer (None uses global setting)
     """
     neuron_fill_color: Optional[str] = None
     neuron_edge_color: Optional[str] = None
@@ -57,6 +60,9 @@ class LayerStyle:
     box_edge_width: float = 2.0
     box_padding: float = 0.5
     box_corner_radius: float = 0.3
+    show_type: Optional[bool] = None
+    show_dim: Optional[bool] = None
+    show_activation: Optional[bool] = None
 
 
 @dataclass
@@ -85,6 +91,7 @@ class PlotConfig:
         show_layer_names: Whether to show layer names
         show_title: Whether to show the plot title
         title_fontsize: Font size for plot title
+        title_offset: Distance (in points) of the title from the top of the plot. Default is 20.
         layer_name_fontsize: Font size for layer names
         max_neurons_per_layer: Maximum neurons to show per layer (for large layers)
         collapse_neurons_start: Number of neurons to show at start when collapsing
@@ -104,6 +111,43 @@ class PlotConfig:
         layer_variable_names_position: Position for variable names ('above', 'below', or 'side').
                                       'above' places labels above the layer, 'below' places below,
                                       'side' places to the left for input layers and right for output layers.
+        layer_variable_names_wrap: If True, wrap text to fit within max_width. Default is False.
+        layer_variable_names_max_width: Maximum width (in characters) for variable name labels before wrapping.
+                                       Only applies when layer_variable_names_wrap=True. Default is 20.
+        layer_variable_names_multialignment: Text alignment for multi-line variable names ('left', 'center', 'right').
+                                            Default is 'center'. Only affects wrapped text with multiple lines.
+        layer_variable_names_offset: Distance (in plot units) between the variable name label and the layer edge.
+                                    For 'above'/'below' positions, controls vertical spacing. For 'side' position,
+                                    controls horizontal spacing. Default is 0.8 for above/below, 1.5 for side.
+        layer_names_custom: Dictionary mapping layer IDs or names to custom label text.
+                           Example: {'Input Layer': 'Input', 'Hidden_1': 'Encoder', 'Output Layer': 'Output'}
+                           This text appears as the first line. If not specified, no custom text is shown.
+        layer_names_show_type: If True, show layer type (e.g., 'FC layer' for FullyConnectedLayer) on the second line.
+                              If False (default), layer type is not displayed.
+        layer_names_show_dim: If True (default), show dimension information (e.g., 'Dim.: 10') on the third line.
+                             If False, dimension info is not displayed.
+        layer_names_show_activation: If True, show activation function (e.g., 'Act.: ReLU') on the fourth line.
+                                    Only displays if the layer has an activation function. Default is False.
+        layer_names_align_bottom: If True, all layer name labels appear at the same height at the bottom of the plot.
+                                 If False (default), each label appears below its respective layer.
+        layer_names_bottom_offset: Distance (in plot units) of aligned layer labels from the bottom of the plot.
+                                  Only applies when layer_names_align_bottom=True. Default is 2.0.
+        layer_names_show_box: If True (default), layer name labels have a rounded box background.
+                             If False, labels appear as plain text without a box.
+        layer_names_line_styles: List of line styles to draw from labels to layers. Options:
+                                'vertical_line': Vertical line from label to layer bottom
+                                'horizontal_line': Horizontal line with ticks spanning the layer width
+                                'brace': Bracket-style brace pointing down from layer to label
+                                'curly_brace': Curly brace pointing down from layer to label
+                                Can combine multiple styles, e.g., ['vertical_line', 'curly_brace']
+                                Default is empty list (no lines).
+        layer_names_line_color: Color of the connector lines/braces. Default is 'black'.
+        layer_names_line_width: Width of the connector lines/braces. Default is 1.0.
+        layer_names_brace_width_multiplier: Multiplier for the width of horizontal_line and brace styles.
+                                            Values > 1.0 make braces wider, < 1.0 make them narrower.
+                                            Default is 1.0 (spans the layer width plus small margins).
+        layer_names_brace_label_offset: Distance (in plot units) between the layer name text and the brace/line.
+                                        Default is 0.5. Increase for more spacing, decrease for tighter layout.
         font_family: Font family to use for all text in the plot (including math text).
                     Default is 'Times New Roman'. Other options: 'Arial', 'Helvetica', 'DejaVu Sans', etc.
     """
@@ -125,6 +169,7 @@ class PlotConfig:
     show_layer_names: bool = True
     show_title: bool = True
     title_fontsize: int = 16
+    title_offset: float = 20
     layer_name_fontsize: int = 12
     max_neurons_per_layer: int = 20
     collapse_neurons_start: int = 10
@@ -136,6 +181,22 @@ class PlotConfig:
     show_layer_variable_names: bool = True
     layer_variable_names_fontsize: int = 11
     layer_variable_names_position: str = 'side'
+    layer_variable_names_wrap: bool = False
+    layer_variable_names_max_width: int = 20
+    layer_variable_names_multialignment: str = 'center'
+    layer_variable_names_offset: float = None  # None means use default based on position
+    layer_names_custom: Dict[str, str] = field(default_factory=dict)
+    layer_names_show_type: bool = False
+    layer_names_show_dim: bool = True
+    layer_names_show_activation: bool = False
+    layer_names_align_bottom: bool = False
+    layer_names_bottom_offset: float = 2.0
+    layer_names_show_box: bool = True
+    layer_names_line_styles: List[str] = field(default_factory=list)
+    layer_names_line_color: str = 'black'
+    layer_names_line_width: float = 1.0
+    layer_names_brace_width_multiplier: float = 1.0
+    layer_names_brace_label_offset: float = 0.5
     font_family: str = 'Times New Roman'
 
 
@@ -282,7 +343,7 @@ class NetworkPlotter:
         # Set title (if enabled)
         if self.config.show_title:
             plot_title = title or f"Neural Network: {network.name}"
-            ax.set_title(plot_title, fontsize=self.config.title_fontsize, pad=20)
+            ax.set_title(plot_title, fontsize=self.config.title_fontsize, pad=self.config.title_offset)
         
         # Calculate and set axis limits based on neuron positions and boxes
         self._set_axis_limits(ax, network)
@@ -361,7 +422,7 @@ class NetworkPlotter:
         # Set title (if enabled)
         if self.config.show_title:
             plot_title = title or f"Neural Network: {network.name} (Branching)"
-            ax.set_title(plot_title, fontsize=self.config.title_fontsize, pad=20)
+            ax.set_title(plot_title, fontsize=self.config.title_fontsize, pad=self.config.title_offset)
         
         # Calculate and set axis limits based on neuron positions and boxes
         self._set_axis_limits(ax, network)
@@ -910,37 +971,283 @@ class NetworkPlotter:
     
     def _add_layer_labels(self, ax: plt.Axes, network: NeuralNetwork) -> None:
         """Add layer names to the plot."""
+        # Activation function capitalization mapping
+        activation_display = {
+            'relu': 'ReLU',
+            'leakyrelu': 'LeakyReLU',
+            'prelu': 'PReLU',
+            'elu': 'ELU',
+            'selu': 'SELU',
+            'gelu': 'GELU',
+            'softmax': 'Softmax',
+            'sigmoid': 'Sigmoid',
+            'tanh': 'Tanh',
+            'softplus': 'Softplus',
+            'softsign': 'Softsign',
+            'swish': 'Swish',
+            'mish': 'Mish'
+        }
+        
         for layer_id, (x, y) in self.layer_positions.items():
             layer = network.get_layer(layer_id)
             
-            # Create label text
-            if layer.name:
-                label = layer.name
-            else:
-                idx = network._layer_order.index(layer_id)
-                label = f"Layer {idx}"
+            # Get layer-specific style if it exists
+            layer_style = None
+            if layer_id in self.config.layer_styles:
+                layer_style = self.config.layer_styles[layer_id]
+            elif layer.name and layer.name in self.config.layer_styles:
+                layer_style = self.config.layer_styles[layer.name]
             
-            # Add neuron count
-            if isinstance(layer, FullyConnectedLayer):
-                neuron_info = f"\n({layer.num_neurons} neurons)"
-                if layer.num_neurons > self.config.max_neurons_per_layer:
-                    neuron_info = f"\n({layer.num_neurons} neurons)\n[showing {self.config.max_neurons_per_layer}]"
-            else:
-                neuron_info = f"\n({layer.get_output_size()} units)"
+            # Determine which settings to use (layer-specific overrides global)
+            show_type = layer_style.show_type if (layer_style and layer_style.show_type is not None) else self.config.layer_names_show_type
+            show_dim = layer_style.show_dim if (layer_style and layer_style.show_dim is not None) else self.config.layer_names_show_dim
+            show_activation = layer_style.show_activation if (layer_style and layer_style.show_activation is not None) else self.config.layer_names_show_activation
             
-            label += neuron_info
+            # Build label in the specified order:
+            # Line 1: Custom description (if specified)
+            # Line 2: Layer type (if option is active)
+            # Line 3: Dimension (if option is active)
+            # Line 4: Activation (if option is active)
+            
+            label_parts = []
+            
+            # Line 1: Custom description
+            if layer_id in self.config.layer_names_custom:
+                label_parts.append(self.config.layer_names_custom[layer_id])
+            elif layer.name and layer.name in self.config.layer_names_custom:
+                label_parts.append(self.config.layer_names_custom[layer.name])
+            elif layer.name and not show_type:
+                # If no custom name and show_type is False, use layer.name as fallback
+                label_parts.append(layer.name)
+            
+            # Line 2: Layer type (for MLP layers, show "FC layer")
+            if show_type:
+                if isinstance(layer, FullyConnectedLayer):
+                    label_parts.append("FC layer")
+                else:
+                    # For other layer types, use a generic label or class name
+                    idx = network._layer_order.index(layer_id)
+                    label_parts.append(f"Layer {idx}")
+            
+            # Line 3: Dimension information
+            if show_dim:
+                if isinstance(layer, FullyConnectedLayer):
+                    dim_text = f"Dim.: {layer.num_neurons}"
+                    if layer.num_neurons > self.config.max_neurons_per_layer:
+                        dim_text += f" [showing {self.config.max_neurons_per_layer}]"
+                    label_parts.append(dim_text)
+                else:
+                    label_parts.append(f"Dim.: {layer.get_output_size()}")
+            
+            # Line 4: Activation information
+            if show_activation:
+                if isinstance(layer, FullyConnectedLayer) and layer.activation:
+                    # Use capitalized version if available, otherwise use as-is
+                    act_name = activation_display.get(layer.activation.lower(), layer.activation)
+                    label_parts.append(f"Act.: {act_name}")
+            
+            # Join all parts with newlines, but only if there are parts to show
+            if not label_parts:
+                # Fallback: if nothing is enabled, show layer type
+                if isinstance(layer, FullyConnectedLayer):
+                    label = "FC layer"
+                else:
+                    idx = network._layer_order.index(layer_id)
+                    label = f"Layer {idx}"
+            else:
+                label = "\n".join(label_parts)
             
             # Position label below the layer
-            label_y = y - (len(self.neuron_positions[layer_id]) * self.config.neuron_spacing / 2) - 1.5
+            if self.config.layer_names_align_bottom:
+                # Find the minimum y position across all layers to align at bottom
+                min_y = float('inf')
+                for lid, positions in self.neuron_positions.items():
+                    if positions:
+                        layer_bottom = min(pos[1] for pos in positions)
+                        min_y = min(min_y, layer_bottom)
+                label_y = min_y - self.config.layer_names_bottom_offset
+            else:
+                # Position below each individual layer
+                label_y = y - (len(self.neuron_positions[layer_id]) * self.config.neuron_spacing / 2) - 1.5
+            
+            # Configure bbox based on show_box setting
+            bbox_props = dict(boxstyle='round,pad=0.5', facecolor='wheat', alpha=0.5) if self.config.layer_names_show_box else None
             
             ax.text(
                 x, label_y,
                 label,
                 ha='center', va='top',
                 fontsize=self.config.layer_name_fontsize,
-                bbox=dict(boxstyle='round,pad=0.5', facecolor='wheat', alpha=0.5),
+                bbox=bbox_props,
                 zorder=12
             )
+            
+            # Draw connector lines if enabled
+            if self.config.layer_names_line_styles:
+                # Get the bottom of the layer
+                layer_positions = self.neuron_positions[layer_id]
+                if layer_positions:
+                    layer_bottom = min(pos[1] for pos in layer_positions) - self.config.neuron_radius
+                    layer_left = min(pos[0] for pos in layer_positions)
+                    layer_right = max(pos[0] for pos in layer_positions)
+                    
+                    # Draw vertical line if requested
+                    if 'vertical_line' in self.config.layer_names_line_styles:
+                        ax.plot(
+                            [x, x],
+                            [label_y + 0.3, layer_bottom],
+                            color=self.config.layer_names_line_color,
+                            linewidth=self.config.layer_names_line_width,
+                            linestyle='-',
+                            zorder=1
+                        )
+                    
+                    # Draw horizontal line with ticks if requested
+                    if 'horizontal_line' in self.config.layer_names_line_styles:
+                        # Horizontal line at label level spanning layer width, with small vertical ticks
+                        # Account for neuron radius to get the actual visual width of the layer
+                        margin = 0.15
+                        base_width = (layer_right + self.config.neuron_radius + margin) - (layer_left - self.config.neuron_radius - margin)
+                        adjusted_width = base_width * self.config.layer_names_brace_width_multiplier
+                        center_x = (layer_left + layer_right) / 2
+                        brace_left = center_x - adjusted_width / 2
+                        brace_right = center_x + adjusted_width / 2
+                        brace_y = label_y + self.config.layer_names_brace_label_offset
+                        
+                        # Horizontal line
+                        ax.plot(
+                            [brace_left, brace_right],
+                            [brace_y, brace_y],
+                            color=self.config.layer_names_line_color,
+                            linewidth=self.config.layer_names_line_width,
+                            linestyle='-',
+                            zorder=1
+                        )
+                        
+                        # Left tick
+                        ax.plot(
+                            [brace_left, brace_left],
+                            [brace_y - 0.15, brace_y + 0.15],
+                            color=self.config.layer_names_line_color,
+                            linewidth=self.config.layer_names_line_width,
+                            linestyle='-',
+                            zorder=1
+                        )
+                        
+                        # Right tick
+                        ax.plot(
+                            [brace_right, brace_right],
+                            [brace_y - 0.15, brace_y + 0.15],
+                            color=self.config.layer_names_line_color,
+                            linewidth=self.config.layer_names_line_width,
+                            linestyle='-',
+                            zorder=1
+                        )
+                    
+                    # Draw curly brace if requested
+                    if 'brace' in self.config.layer_names_line_styles:
+                        # Use matplotlib's FancyBboxPatch for a proper curly brace
+                        margin = 0.15
+                        base_width = (layer_right + self.config.neuron_radius + margin) - (layer_left - self.config.neuron_radius - margin)
+                        adjusted_width = base_width * self.config.layer_names_brace_width_multiplier
+                        center_x = (layer_left + layer_right) / 2
+                        brace_left = center_x - adjusted_width / 2
+                        brace_right = center_x + adjusted_width / 2
+                        brace_y = label_y + self.config.layer_names_brace_label_offset
+                        
+                        # Create a brace annotation pointing downward
+                        ax.annotate('', xy=((brace_left + brace_right) / 2, label_y),
+                                    xytext=((brace_left + brace_right) / 2, brace_y),
+                                    arrowprops=dict(
+                                        arrowstyle='-',
+                                        connectionstyle='arc3,rad=0',
+                                        linewidth=0
+                                    ))
+                        
+                        # Draw the brace using multiple small arcs for a curly brace effect
+                        from matplotlib.patches import FancyBboxPatch
+                        width = brace_right - brace_left
+                        
+                        # Use matplotlib's bracket annotation
+                        ax.annotate('', 
+                                   xy=(brace_left, brace_y), 
+                                   xytext=(brace_right, brace_y),
+                                   arrowprops=dict(
+                                       arrowstyle='-',
+                                       shrinkA=0, shrinkB=0,
+                                       connectionstyle='bar,fraction=-0.15',
+                                       linewidth=self.config.layer_names_line_width,
+                                       color=self.config.layer_names_line_color
+                                   ),
+                                   zorder=1)
+                    
+                    # Draw curly brace if requested
+                    if 'curly_brace' in self.config.layer_names_line_styles:
+                        # Draw an actual curly brace using path
+                        import matplotlib.path as mpath
+                        import matplotlib.patches as mpatches
+                        
+                        margin = 0.15
+                        base_width = (layer_right + self.config.neuron_radius + margin) - (layer_left - self.config.neuron_radius - margin)
+                        adjusted_width = base_width * self.config.layer_names_brace_width_multiplier
+                        center_x = (layer_left + layer_right) / 2
+                        brace_left = center_x - adjusted_width / 2
+                        brace_right = center_x + adjusted_width / 2
+                        brace_y = label_y + self.config.layer_names_brace_label_offset
+                        
+                        # Create a curly brace path with proper curved tips
+                        height = 0.15  # Total height of the brace
+                        curl_width = 0.1  # Width of the end curls
+                        
+                        # Calculate quarter points for the brace
+                        quarter = adjusted_width / 4
+                        
+                        # Define vertices for a proper curly brace with curved tips
+                        verts = [
+                            # Left side - start with outward curl at top
+                            (brace_left, brace_y),  # Left endpoint
+                            (brace_left - curl_width * 0.3, brace_y - height * 0.15),  # Curl out control
+                            (brace_left + curl_width * 0.5, brace_y - height * 0.3),  # Curl in control
+                            (brace_left + quarter * 0.8, brace_y - height * 0.45),  # Quarter point
+                            # Approach middle from left
+                            (center_x - quarter * 0.3, brace_y - height * 0.7),  # Control
+                            (center_x - curl_width * 0.5, brace_y - height * 0.9),  # Control near tip
+                            (center_x, brace_y - height),  # Middle tip (pointing down)
+                            # Leave middle to right
+                            (center_x + curl_width * 0.5, brace_y - height * 0.9),  # Control near tip
+                            (center_x + quarter * 0.3, brace_y - height * 0.7),  # Control
+                            (brace_right - quarter * 0.8, brace_y - height * 0.45),  # Quarter point
+                            # Right side - end with outward curl at top
+                            (brace_right - curl_width * 0.5, brace_y - height * 0.3),  # Curl in control
+                            (brace_right + curl_width * 0.3, brace_y - height * 0.15),  # Curl out control
+                            (brace_right, brace_y),  # Right endpoint
+                        ]
+                        
+                        codes = [
+                            mpath.Path.MOVETO,    # Start at left
+                            mpath.Path.CURVE4,    # Control 1 for left curl
+                            mpath.Path.CURVE4,    # Control 2 for left curl
+                            mpath.Path.CURVE4,    # Endpoint quarter
+                            mpath.Path.CURVE4,    # Control 1 to middle
+                            mpath.Path.CURVE4,    # Control 2 to middle
+                            mpath.Path.CURVE4,    # Middle tip
+                            mpath.Path.CURVE4,    # Control 1 from middle
+                            mpath.Path.CURVE4,    # Control 2 from middle
+                            mpath.Path.CURVE4,    # Endpoint quarter
+                            mpath.Path.CURVE4,    # Control 1 for right curl
+                            mpath.Path.CURVE4,    # Control 2 for right curl
+                            mpath.Path.CURVE4,    # End at right
+                        ]
+                        
+                        path = mpath.Path(verts, codes)
+                        patch = mpatches.PathPatch(
+                            path,
+                            facecolor='none',
+                            edgecolor=self.config.layer_names_line_color,
+                            linewidth=self.config.layer_names_line_width,
+                            zorder=1
+                        )
+                        ax.add_patch(patch)
     
     def _add_layer_variable_names(self, ax: plt.Axes, network: NeuralNetwork) -> None:
         """Add variable name labels to specified layers."""
@@ -956,6 +1263,12 @@ class NetworkPlotter:
             
             if variable_label is None:
                 continue
+            
+            # Wrap text if enabled
+            if self.config.layer_variable_names_wrap:
+                import textwrap
+                wrapped_lines = textwrap.wrap(variable_label, width=self.config.layer_variable_names_max_width)
+                variable_label = '\n'.join(wrapped_lines)
             
             # Calculate position based on configuration
             neurons_in_layer = self.neuron_positions[layer_id]
@@ -973,13 +1286,17 @@ class NetworkPlotter:
             if layer_style and layer_style.box_around_layer:
                 box_offset = layer_style.box_padding + layer_style.box_edge_width * 0.5
             
+            # Use custom offset or defaults based on position
+            vertical_offset = self.config.layer_variable_names_offset if self.config.layer_variable_names_offset is not None else 0.8
+            horizontal_offset = self.config.layer_variable_names_offset if self.config.layer_variable_names_offset is not None else 1.5
+            
             if self.config.layer_variable_names_position == 'above':
                 label_x = x
-                label_y = y + layer_height / 2 + 0.8 + box_offset
+                label_y = y + layer_height / 2 + vertical_offset + box_offset
                 ha, va = 'center', 'bottom'
             elif self.config.layer_variable_names_position == 'below':
                 label_x = x
-                label_y = y - layer_height / 2 - 0.8 - box_offset
+                label_y = y - layer_height / 2 - vertical_offset - box_offset
                 ha, va = 'center', 'top'
             else:  # 'side'
                 # Determine if this is an input or output layer
@@ -988,18 +1305,18 @@ class NetworkPlotter:
                 
                 if is_input:
                     # Place to the left of input layers
-                    label_x = x - 1.5 - box_offset
+                    label_x = x - horizontal_offset - box_offset
                     label_y = y
                     ha, va = 'right', 'center'
                 elif is_output:
                     # Place to the right of output layers
-                    label_x = x + 1.5 + box_offset
+                    label_x = x + horizontal_offset + box_offset
                     label_y = y
                     ha, va = 'left', 'center'
                 else:
                     # For hidden layers, place above
                     label_x = x
-                    label_y = y + layer_height / 2 + 0.8 + box_offset
+                    label_y = y + layer_height / 2 + vertical_offset + box_offset
                     ha, va = 'center', 'bottom'
             
             ax.text(
@@ -1008,6 +1325,7 @@ class NetworkPlotter:
                 ha=ha, va=va,
                 fontsize=self.config.layer_variable_names_fontsize,
                 fontweight='bold',
+                multialignment=self.config.layer_variable_names_multialignment,
                 bbox=dict(boxstyle='round,pad=0.6', facecolor='lightgray', alpha=0.7, edgecolor='black'),
                 zorder=13
             )
