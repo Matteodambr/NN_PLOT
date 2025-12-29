@@ -18,8 +18,9 @@ matplotlib.use('Agg')  # Use non-interactive backend
 from src.NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer
 from src.NN_PLOTTING_UTILITIES import plot_network, PlotConfig, LayerGroup
 
-# Create output directory
-output_dir = os.path.join(os.path.dirname(__file__), "test_outputs", "brace_height")
+# Create output directory at project root
+project_root = os.path.join(os.path.dirname(__file__), '..', '..')
+output_dir = os.path.join(project_root, "test_outputs", "brace_height")
 os.makedirs(output_dir, exist_ok=True)
 
 print("=" * 60)

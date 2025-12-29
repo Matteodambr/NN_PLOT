@@ -16,6 +16,11 @@ from src.NN_DEFINITION_UTILITIES import (
 )
 from src.NN_PLOTTING_UTILITIES import plot_network, PlotConfig
 
+# Create output directory at project root
+project_root = os.path.join(os.path.dirname(__file__), '..', '..')
+output_dir = os.path.join(project_root, "test_outputs")
+os.makedirs(output_dir, exist_ok=True)
+
 
 def example_1_simple_network():
     """Example 1: Simple linear network."""
@@ -42,7 +47,7 @@ def example_1_simple_network():
     plot_network(
         nn,
         title="Simple 3-Layer Neural Network",
-        save_path=os.path.join(os.path.dirname(__file__), "test_outputs", "output_simple_network.png"),
+        save_path=os.path.join(output_dir, "output_simple_network.png"),
         show=True
     )
     
@@ -82,7 +87,7 @@ def example_2_deeper_network():
     plot_network(
         nn,
         title="Deep Neural Network (5 layers)",
-        save_path=os.path.join(os.path.dirname(__file__), "test_outputs", "output_deep_network.png"),
+        save_path=os.path.join(output_dir, "output_deep_network.png"),
         show=True,
         config=config
     )
@@ -141,7 +146,7 @@ def example_3_branching_network():
     plot_network(
         nn,
         title="Multi-Task Branching Network",
-        save_path=os.path.join(os.path.dirname(__file__), "test_outputs", "output_branching_network.png"),
+        save_path=os.path.join(output_dir, "output_branching_network.png"),
         show=True,
         config=config
     )
@@ -183,7 +188,7 @@ def example_4_mnist_network():
     plot_network(
         nn,
         title="MNIST Digit Classifier",
-        save_path=os.path.join(os.path.dirname(__file__), "test_outputs", "output_mnist_network.png"),
+        save_path=os.path.join(output_dir, "output_mnist_network.png"),
         show=True,
         config=config
     )
@@ -233,7 +238,7 @@ def example_5_multi_branch():
     plot_network(
         nn,
         title="Network with 3 Parallel Branches",
-        save_path=os.path.join(os.path.dirname(__file__), "test_outputs", "output_multi_branch.png"),
+        save_path=os.path.join(output_dir, "output_multi_branch.png"),
         show=True,
         config=config
     )
@@ -277,7 +282,7 @@ def example_6_custom_styling():
     plot_network(
         nn,
         title="Custom Styled Neural Network",
-        save_path=os.path.join(os.path.dirname(__file__), "test_outputs", "output_custom_style.png"),
+        save_path=os.path.join(output_dir, "output_custom_style.png"),
         show=True,
         config=config
     )
