@@ -5,9 +5,8 @@ This directory contains scripts to generate neural network architecture diagrams
 ## Paper Information
 
 **Conference:** CEAS 2025 (Council of European Aerospace Societies)  
-**Paper Title:** [Add your paper title here]  
-**Authors:** [Add authors]  
-**Paper ID/Track:** [Add if applicable]
+**Paper Title:** Enhancing Space Manipulator Fault Tolerance for In-Orbit Servicing through Meta-Reinforcement Learning
+**Authors:** Matteo D'Ambrosio, Michelle Lavagna
 
 ## Files
 
