@@ -4,7 +4,7 @@
 
 NeuralNet - Visualizer is a Python module for representing and visualizing custom neural network architectures. It provides a flexible class structure to model both linear (sequential) and non-linear (branching) neural network topologies with highly customizable visualizations.
 
-<img width="4612" height="2970" alt="encoder_decoder_comprehensive" src="https://github.com/user-attachments/assets/dff283ee-ce59-4cb3-87ce-aaf343023379" />
+<img width="4612" height="2970" alt="encoder_decoder_comprehensive" src="https://github.com/user-attachments/assets/46a841dd-0f35-4187-a522-86cbfefcd88b" />
 
 ## Features
 
@@ -755,6 +755,7 @@ See `PlottedNetworks/README.md` for details on adding new paper directories.
 ## License
 
 See LICENSE file for details.
+
 
 
 
