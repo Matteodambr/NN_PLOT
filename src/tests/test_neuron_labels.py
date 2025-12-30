@@ -14,7 +14,7 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
-from src.NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer
+from src.NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer, VectorInput
 from src.NN_PLOTTING_UTILITIES import plot_network, PlotConfig
 
 # Create output directory at project root
@@ -29,8 +29,8 @@ def test_basic_text_labels():
     nn = NeuralNetwork("Basic Labels Network")
     
     # Input layer with text labels on the left
-    nn.add_layer(FullyConnectedLayer(
-        num_neurons=3,
+    nn.add_layer(VectorInput(
+        num_features=3,
         name="Input",
         neuron_labels=["Age", "Income", "Credit Score"],
         label_position="left"
@@ -69,8 +69,8 @@ def test_latex_math_labels():
     nn = NeuralNetwork("LaTeX Math Network")
     
     # Input layer with LaTeX math
-    nn.add_layer(FullyConnectedLayer(
-        num_neurons=3,
+    nn.add_layer(VectorInput(
+        num_features=3,
         name="Input",
         neuron_labels=[r"$x_1$", r"$x_2$", r"$x_3$"],
         label_position="left"
@@ -114,8 +114,8 @@ def test_complex_latex():
     nn = NeuralNetwork("Complex LaTeX")
     
     # Input with complex LaTeX
-    nn.add_layer(FullyConnectedLayer(
-        num_neurons=4,
+    nn.add_layer(VectorInput(
+        num_features=4,
         name="Input",
         neuron_labels=[
             r"$\alpha$",
@@ -161,8 +161,8 @@ def test_left_and_right_positioning():
     
     # Network with labels on left
     nn_left = NeuralNetwork("Left Labels")
-    nn_left.add_layer(FullyConnectedLayer(
-        num_neurons=4,
+    nn_left.add_layer(VectorInput(
+        num_features=4,
         name="Input",
         neuron_labels=[r"$x_1$", r"$x_2$", r"$x_3$", r"$x_4$"],
         label_position="left"
@@ -182,7 +182,7 @@ def test_left_and_right_positioning():
     
     # Network with labels on right
     nn_right = NeuralNetwork("Right Labels")
-    nn_right.add_layer(FullyConnectedLayer(4, name="Input"))
+    nn_right.add_layer(VectorInput(num_features=4, name="Input"))
     nn_right.add_layer(FullyConnectedLayer(3, activation="relu", name="Hidden"))
     nn_right.add_layer(FullyConnectedLayer(
         num_neurons=2,
@@ -209,8 +209,8 @@ def test_mixed_labels():
     nn = NeuralNetwork("Mixed Labels")
     
     # Input with labels
-    nn.add_layer(FullyConnectedLayer(
-        num_neurons=3,
+    nn.add_layer(VectorInput(
+        num_features=3,
         name="Input",
         neuron_labels=["Feature A", "Feature B", "Feature C"],
         label_position="left"
@@ -255,8 +255,8 @@ def test_show_hide_control():
     print("\nTesting show/hide control...")
     
     nn = NeuralNetwork("Show/Hide Test")
-    nn.add_layer(FullyConnectedLayer(
-        num_neurons=3,
+    nn.add_layer(VectorInput(
+        num_features=3,
         name="Input",
         neuron_labels=[r"$x_1$", r"$x_2$", r"$x_3$"],
         label_position="left"
@@ -298,8 +298,8 @@ def test_with_neuron_indices():
     print("\nTesting custom labels with neuron indices...")
     
     nn = NeuralNetwork("Labels + Indices")
-    nn.add_layer(FullyConnectedLayer(
-        num_neurons=4,
+    nn.add_layer(VectorInput(
+        num_features=4,
         name="Input",
         neuron_labels=[r"$x_1$", r"$x_2$", r"$x_3$", r"$x_4$"],
         label_position="left"
@@ -335,8 +335,8 @@ def test_with_collapsed_layers():
     
     # Large input layer with labels
     input_labels = [f"Feature {i+1}" for i in range(20)]
-    nn.add_layer(FullyConnectedLayer(
-        num_neurons=20,
+    nn.add_layer(VectorInput(
+        num_features=20,
         name="Input",
         neuron_labels=input_labels,
         label_position="left"
@@ -378,8 +378,8 @@ def test_font_sizes():
     print("\nTesting different font sizes...")
     
     nn = NeuralNetwork("Font Size Test")
-    nn.add_layer(FullyConnectedLayer(
-        num_neurons=3,
+    nn.add_layer(VectorInput(
+        num_features=3,
         name="Input",
         neuron_labels=[r"$\alpha$", r"$\beta$", r"$\gamma$"],
         label_position="left"
@@ -429,8 +429,8 @@ def test_realistic_example():
     nn = NeuralNetwork("Credit Risk Predictor")
     
     # Input features
-    nn.add_layer(FullyConnectedLayer(
-        num_neurons=6,
+    nn.add_layer(VectorInput(
+        num_features=6,
         name="Input Features",
         neuron_labels=[
             "Age",

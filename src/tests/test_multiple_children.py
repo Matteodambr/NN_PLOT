@@ -9,6 +9,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 from src.NN_DEFINITION_UTILITIES import (
     NeuralNetwork,
     FullyConnectedLayer,
+    VectorInput,
     NetworkType
 )
 
@@ -97,7 +98,7 @@ def test_fc_with_many_children():
     nn = NeuralNetwork(name="Multi-Branch FC")
     
     # Input and shared layer
-    input_id = nn.add_layer(FullyConnectedLayer(100, name="Input"))
+    input_id = nn.add_layer(VectorInput(num_features=100, name="Input"))
     shared_id = nn.add_layer(FullyConnectedLayer(64, activation="relu", name="Shared FC"))
     
     # Create 5 parallel branches from the same parent

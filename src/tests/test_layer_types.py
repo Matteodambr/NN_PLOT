@@ -9,6 +9,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 from src.NN_DEFINITION_UTILITIES import (
     NeuralNetwork,
     FullyConnectedLayer,
+    VectorInput,
     NetworkType,
     LayerType
 )
@@ -92,7 +93,7 @@ def test_branching_with_fc_layers():
     
     # Input layer
     input_id = nn.add_layer(
-        FullyConnectedLayer(num_neurons=100, name="Input")
+        VectorInput(num_features=100, name="Input")
     )
     
     # Shared hidden layer

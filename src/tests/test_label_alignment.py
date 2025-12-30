@@ -11,7 +11,7 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
-from src.NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer
+from src.NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer, VectorInput
 from src.NN_PLOTTING_UTILITIES import plot_network, PlotConfig, LayerStyle
 
 # Create output directory
@@ -25,8 +25,8 @@ def test_global_alignment():
     print("\nTesting global alignment settings...")
     
     nn = NeuralNetwork("Global Alignment Test")
-    nn.add_layer(FullyConnectedLayer(
-        num_neurons=3,
+    nn.add_layer(VectorInput(
+        num_features=3,
         name="Input",
         neuron_labels=["A", "B", "C"],
         label_position="left"
@@ -90,8 +90,8 @@ def test_per_layer_alignment():
     print("\nTesting per-layer alignment overrides...")
     
     nn = NeuralNetwork("Per-Layer Test")
-    nn.add_layer(FullyConnectedLayer(
-        num_neurons=3,
+    nn.add_layer(VectorInput(
+        num_features=3,
         name="Input",
         neuron_labels=["Feature 1", "Feature 2", "Feature 3"],
         label_position="left"
@@ -135,8 +135,8 @@ def test_latex_alignment():
     print("\nTesting alignment with LaTeX labels...")
     
     nn = NeuralNetwork("LaTeX Alignment")
-    nn.add_layer(FullyConnectedLayer(
-        num_neurons=3,
+    nn.add_layer(VectorInput(
+        num_features=3,
         name="Input",
         neuron_labels=[r"$x_1$", r"$x_2$", r"$x_3$"],
         label_position="left"

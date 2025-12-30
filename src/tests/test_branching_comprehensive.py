@@ -6,7 +6,7 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
-from src.NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer
+from src.NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer, VectorInput
 from src.NN_PLOTTING_UTILITIES import plot_network, PlotConfig
 
 output_dir = os.path.join(os.path.dirname(__file__), "figures")
@@ -21,7 +21,7 @@ print("=" * 70)
 # ==============================================================================
 print("\n[Test 1] Simple two-head output")
 nn1 = NeuralNetwork("Simple Branch")
-input1 = FullyConnectedLayer(5, name="Input")
+input1 = VectorInput(num_features=5, name="Input")
 nn1.add_layer(input1)
 hidden1 = FullyConnectedLayer(10, activation="relu", name="Hidden")
 nn1.add_layer(hidden1, parent_ids=[input1.layer_id])
@@ -40,7 +40,7 @@ print("✓ Created: branch_test1_simple.png")
 # ==============================================================================
 print("\n[Test 2] Three output heads")
 nn2 = NeuralNetwork("Three Heads")
-input2 = FullyConnectedLayer(5, name="Input")
+input2 = VectorInput(num_features=5, name="Input")
 nn2.add_layer(input2)
 hidden2 = FullyConnectedLayer(10, activation="relu", name="Hidden")
 nn2.add_layer(hidden2, parent_ids=[input2.layer_id])
@@ -61,7 +61,7 @@ print("✓ Created: branch_test2_three_heads.png")
 # ==============================================================================
 print("\n[Test 3] Different sized output heads")
 nn3 = NeuralNetwork("Different Sizes")
-input3 = FullyConnectedLayer(5, name="Input")
+input3 = VectorInput(num_features=5, name="Input")
 nn3.add_layer(input3)
 hidden3 = FullyConnectedLayer(10, activation="relu", name="Hidden")
 nn3.add_layer(hidden3, parent_ids=[input3.layer_id])
@@ -80,7 +80,7 @@ print("✓ Created: branch_test3_different_sizes.png")
 # ==============================================================================
 print("\n[Test 4] Large layers with collapsing (like CEAS2025)")
 nn4 = NeuralNetwork("CEAS-like")
-input4 = FullyConnectedLayer(6, name="Input")
+input4 = VectorInput(num_features=6, name="Input")
 nn4.add_layer(input4)
 h4_1 = FullyConnectedLayer(300, activation="relu", name="H1")
 nn4.add_layer(h4_1, parent_ids=[input4.layer_id])

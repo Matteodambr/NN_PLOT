@@ -10,7 +10,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 import matplotlib
 matplotlib.use('Agg')
 
-from src.NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer
+from src.NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer, VectorInput
 from src.NN_PLOTTING_UTILITIES import plot_network, PlotConfig, LayerGroup
 
 # Create output directory at project root
@@ -21,7 +21,7 @@ os.makedirs(output_dir, exist_ok=True)
 print("Testing single-layer group bracket...")
 
 nn = NeuralNetwork("Single Layer Group Test")
-l1_id = nn.add_layer(FullyConnectedLayer(8, name="Input"))
+l1_id = nn.add_layer(VectorInput(num_features=8, name="Input"))
 l2_id = nn.add_layer(FullyConnectedLayer(10, activation="relu", name="Processing"), parent_ids=[l1_id])
 l3_id = nn.add_layer(FullyConnectedLayer(6, activation="softmax", name="Output"), parent_ids=[l2_id])
 

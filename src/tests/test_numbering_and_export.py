@@ -17,7 +17,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
 from src.NN_DEFINITION_UTILITIES import (
     NeuralNetwork,
-    FullyConnectedLayer
+    FullyConnectedLayer,
+    VectorInput
 )
 
 from src.NN_PLOTTING_UTILITIES import plot_network, PlotConfig
@@ -35,7 +36,7 @@ def test_numbering_directions():
     
     # Create a simple network
     nn = NeuralNetwork("Numbering Test")
-    nn.add_layer(FullyConnectedLayer(8, name="Input"))
+    nn.add_layer(VectorInput(num_features=8, name="Input"))
     nn.add_layer(FullyConnectedLayer(6, activation="relu", name="Hidden"))
     nn.add_layer(FullyConnectedLayer(3, activation="softmax", name="Output"))
     
@@ -72,7 +73,7 @@ def test_dpi_variations():
     print("\nTesting DPI variations...")
     
     nn = NeuralNetwork("DPI Test")
-    nn.add_layer(FullyConnectedLayer(5, name="Input"))
+    nn.add_layer(VectorInput(num_features=5, name="Input"))
     nn.add_layer(FullyConnectedLayer(3, activation="relu", name="Hidden"))
     nn.add_layer(FullyConnectedLayer(2, activation="sigmoid", name="Output"))
     
@@ -95,7 +96,7 @@ def test_export_formats():
     print("\nTesting export formats...")
     
     nn = NeuralNetwork("Format Test")
-    nn.add_layer(FullyConnectedLayer(6, name="Input"))
+    nn.add_layer(VectorInput(num_features=6, name="Input"))
     nn.add_layer(FullyConnectedLayer(4, activation="relu", name="Hidden"))
     nn.add_layer(FullyConnectedLayer(2, activation="softmax", name="Output"))
     
@@ -152,7 +153,7 @@ def test_combined_features():
     print("\nTesting combined features...")
     
     nn = NeuralNetwork("Combined Features")
-    nn.add_layer(FullyConnectedLayer(10, name="Input"))
+    nn.add_layer(VectorInput(num_features=10, name="Input"))
     nn.add_layer(FullyConnectedLayer(8, activation="relu", name="Hidden 1"))
     nn.add_layer(FullyConnectedLayer(6, activation="relu", name="Hidden 2"))
     nn.add_layer(FullyConnectedLayer(3, activation="softmax", name="Output"))
