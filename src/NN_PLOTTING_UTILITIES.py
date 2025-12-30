@@ -135,6 +135,13 @@ class PlotConfig:
         neuron_text_label_fontsize: Font size for custom neuron text labels
         neuron_text_label_offset: Horizontal offset from neuron center for text labels
         neuron_text_label_alignment: Text alignment for neuron labels ('left', 'center', or 'right')
+        neuron_text_label_background: Whether to show a background box behind neuron labels to prevent
+                                      connection lines from overlapping the text. Default is True.
+                                      Automatically disabled when labels are inside a layer box 
+                                      (box_around_layer=True and box_include_neuron_labels=True).
+        neuron_text_label_background_padding: Padding around the text in the background box. Default is 0.08.
+        neuron_text_label_background_alpha: Transparency of the label background box (0-1). Default is 0.85.
+                                            Lower values make connection lines more visible through the text.
         show_layer_names: Whether to show layer names
         show_title: Whether to show the plot title
         title_fontsize: Font size for plot title
@@ -145,10 +152,10 @@ class PlotConfig:
         collapse_neurons_end: Number of neurons to show at end when collapsing
         layer_styles: Dictionary mapping layer IDs or names to LayerStyle objects.
                      Use this to apply layer-specific styling including rounded boxes.
-        background_color: Background color for the plot. Use 'transparent' for transparent background,
-                         'white' for white, or any matplotlib color (hex, rgb, named colors).
+        background_color: Background color for the plot. Default is 'white'.
+                         Use 'transparent' for transparent background, or any matplotlib color
+                         (hex, rgb, named colors).
         layer_groups: List of LayerGroup objects for grouping layers with brackets and labels at the bottom
-                         Default is 'transparent'.
         layer_spacing_multiplier: Multiplier for the overall network width. Values > 1.0 increase
                                  spacing between layers proportionally, making the network wider.
                                  Default is 1.0 (no scaling). Example: 1.5 makes network 50% wider.
@@ -217,6 +224,9 @@ class PlotConfig:
     neuron_text_label_fontsize: int = 10
     neuron_text_label_offset: float = 0.8
     neuron_text_label_alignment: str = 'center'
+    neuron_text_label_background: bool = True
+    neuron_text_label_background_padding: float = 0.08
+    neuron_text_label_background_alpha: float = 0.75
     show_layer_names: bool = True
     show_title: bool = True
     title_fontsize: int = 16
@@ -226,7 +236,7 @@ class PlotConfig:
     collapse_neurons_start: int = 10
     collapse_neurons_end: int = 9
     layer_styles: Dict[str, LayerStyle] = field(default_factory=dict)
-    background_color: str = 'transparent'
+    background_color: str = 'white'
     layer_spacing_multiplier: float = 1.0
     layer_variable_names: Dict[str, str] = field(default_factory=dict)
     show_layer_variable_names: bool = True
@@ -317,6 +327,62 @@ class NetworkPlotter:
         else:
             return LayerStyle()  # Return empty style (all None values)
     
+    def _get_text_dimensions(self, ax: plt.Axes, text: str, fontsize: float) -> Tuple[float, float]:
+        """
+        Get the actual rendered width and height of text in data coordinates.
+        
+        Uses matplotlib's text rendering to accurately measure text including
+        LaTeX math, subscripts, superscripts, and variable-width fonts.
+        
+        Args:
+            ax: The matplotlib axes to use for measurement
+            text: The text string to measure (can include LaTeX)
+            fontsize: Font size in points
+            
+        Returns:
+            Tuple of (width, height) in data coordinates
+        """
+        import re
+        try:
+            fig = ax.get_figure()
+            
+            # Create a temporary text object - must be visible for LaTeX to render
+            # Place it at a position within the axes limits
+            xlim = ax.get_xlim()
+            ylim = ax.get_ylim()
+            temp_text = ax.text(xlim[0], ylim[0], text, fontsize=fontsize)
+            
+            # Force canvas draw to render LaTeX text
+            fig.canvas.draw()
+            
+            # Get the renderer and measure
+            renderer = fig.canvas.get_renderer()
+            bbox = temp_text.get_window_extent(renderer=renderer)
+            
+            # Convert to data coordinates
+            inv_transform = ax.transData.inverted()
+            bbox_data = inv_transform.transform_bbox(bbox)
+            
+            # Clean up
+            temp_text.remove()
+            
+            return bbox_data.width, bbox_data.height
+        except Exception:
+            # Fallback to estimation if rendering fails
+            # Remove $ delimiters
+            s = str(text).replace('$', '')
+            # Remove LaTeX commands
+            s = re.sub(r'\\[a-zA-Z]+', '', s)
+            # Remove braces
+            s = s.replace('{', '').replace('}', '')
+            # Subscripts/superscripts are smaller, count as 0.6 of a character
+            main_chars = s.replace('_', '').replace('^', '')
+            sub_super_count = s.count('_') + s.count('^')
+            effective_len = len(main_chars) + sub_super_count * 0.6
+            char_width = fontsize * 0.015
+            char_height = fontsize * 0.02
+            return effective_len * char_width, char_height
+
     def plot_network(
         self,
         network: NeuralNetwork,
@@ -375,6 +441,10 @@ class NetworkPlotter:
         
         # Calculate positions for all neurons
         self._calculate_linear_positions(network)
+        
+        # Set axis limits early so text measurements work correctly
+        # (text dimension calculations need proper data coordinate transforms)
+        self._set_axis_limits(ax, network)
         
         # Draw connections first (so they appear behind neurons)
         self._draw_linear_connections(ax, network)
@@ -458,6 +528,10 @@ class NetworkPlotter:
         
         # Calculate positions using a layer-based approach
         self._calculate_branching_positions(network)
+        
+        # Set axis limits early so text measurements work correctly
+        # (text dimension calculations need proper data coordinate transforms)
+        self._set_axis_limits(ax, network)
         
         # Draw connections first
         self._draw_branching_connections(ax, network)
@@ -737,6 +811,8 @@ class NetworkPlotter:
             
             # Pre-calculate label x-position for vertical alignment (if labels are enabled)
             layer_label_x = None
+            max_label_width = 0
+            max_label_height = 0
             if (self.config.show_neuron_text_labels and 
                 isinstance(layer, FullyConnectedLayer) and 
                 layer.neuron_labels is not None):
@@ -747,6 +823,35 @@ class NetworkPlotter:
                         layer_label_x = layer_x - self.config.neuron_text_label_offset
                     else:  # "right"
                         layer_label_x = layer_x + self.config.neuron_text_label_offset
+                
+                # Pre-compute maximum label dimensions for uniform background boxes
+                # Find the longest label by estimating visual length, then measure that one accurately
+                import re
+                def estimate_visual_length(s):
+                    """Estimate visual length for sorting - longer subscripts = wider text"""
+                    s = str(s).replace('$', '')
+                    # Count digits in subscripts separately (they're smaller but still take space)
+                    # Extract subscript content
+                    subscript_match = re.findall(r'_\{?(\d+)\}?', s)
+                    subscript_digits = sum(len(m) for m in subscript_match)
+                    # Remove LaTeX commands but keep their content length estimate
+                    s_clean = re.sub(r'\\[a-zA-Z]+', 'X', s)  # Replace command with single char
+                    s_clean = s_clean.replace('{', '').replace('}', '').replace('_', '').replace('^', '')
+                    # Subscript digits count as ~0.7 of a regular character
+                    return len(s_clean) + subscript_digits * 0.7
+                
+                # Find the label with maximum estimated visual length
+                longest_label = max(layer.neuron_labels, key=estimate_visual_length)
+                
+                # Measure the longest label
+                w, h = self._get_text_dimensions(ax, str(longest_label), self.config.neuron_text_label_fontsize)
+                max_label_width = w
+                max_label_height = h
+                
+                # Add safety margin for width (subscripts, accents can affect width more)
+                # Height needs less margin as it's more consistent across labels
+                max_label_width *= 1.20
+                max_label_height *= 1.05  # Minimal height margin
             
             for i, (x, y) in enumerate(positions):
                 # Draw ellipsis dots instead of a neuron at the collapse position
@@ -852,13 +957,63 @@ class NetworkPlotter:
                         if alignment not in ['left', 'center', 'right']:
                             alignment = 'center'  # Default to center if invalid
                         
+                        # Prepare text kwargs
+                        text_kwargs = {
+                            'ha': alignment,
+                            'va': 'center',
+                            'fontsize': self.config.neuron_text_label_fontsize,
+                            'zorder': 11
+                        }
+                        
+                        # Add background box if enabled to prevent connection lines overlapping text
+                        # Skip if the layer has a box that includes neuron labels (they're already inside a colored box)
+                        labels_inside_layer_box = (layer_style.box_around_layer and 
+                                                   layer_style.box_include_neuron_labels)
+                        
+                        if self.config.neuron_text_label_background and not labels_inside_layer_box:
+                            # Use the plot background color for the label background
+                            bg_color = self.config.background_color
+                            if bg_color == 'transparent':
+                                bg_color = 'white'  # Default to white for transparent backgrounds
+                            
+                            # Use pre-computed max dimensions for uniform box sizes across the layer
+                            # Add padding for readability (less padding for height to keep boxes compact)
+                            padding = self.config.neuron_text_label_background_padding
+                            box_width = max_label_width + 2 * padding
+                            box_height = max_label_height + padding  # Less vertical padding
+                            
+                            # Calculate box position based on alignment
+                            # The box should be centered around where the WIDEST label would be centered
+                            # For center alignment: text is centered at label_x, so box should be too
+                            # For left alignment: text left edge is at label_x, box left edge should have padding before it
+                            # For right alignment: text right edge is at label_x, box right edge should have padding after it
+                            if alignment == 'center':
+                                box_x = label_x - box_width / 2
+                            elif alignment == 'left':
+                                box_x = label_x - padding
+                            else:  # 'right'
+                                box_x = label_x - max_label_width - padding
+                            box_y = y - box_height / 2
+                            
+                            # Draw background rectangle with rounded corners
+                            from matplotlib.patches import FancyBboxPatch
+                            bg_box = FancyBboxPatch(
+                                (box_x, box_y),
+                                box_width,
+                                box_height,
+                                boxstyle=f'round,pad=0,rounding_size={min(0.1, box_height/4)}',
+                                facecolor=bg_color,
+                                edgecolor='none',
+                                alpha=self.config.neuron_text_label_background_alpha,
+                                zorder=10.5  # Above connections but below text
+                            )
+                            ax.add_patch(bg_box)
+                        
                         # Draw the text label with LaTeX support
-                        ax.text(
-                            label_x, y, label_text,
-                            ha=alignment, va='center',
-                            fontsize=self.config.neuron_text_label_fontsize,
-                            zorder=11
-                        )
+                        ax.text(label_x, y, label_text,
+                                ha=alignment, va='center',
+                                fontsize=self.config.neuron_text_label_fontsize,
+                                zorder=11)
     
     def _draw_layer_boxes(self, ax: plt.Axes, network: NeuralNetwork) -> None:
         """Draw rounded boxes around layers that have box_around_layer=True in their LayerStyle."""
@@ -897,32 +1052,44 @@ class NetworkPlotter:
                     # Labels are positioned at neuron_text_label_offset from neuron center
                     # Box already includes neuron_radius + padding from center
                     
-                    # Estimate visual text width based on longest label
-                    # Strip LaTeX commands that don't contribute to visual width
-                    import re
-                    def visual_length(s):
-                        # Remove $ delimiters
-                        s = s.replace('$', '')
-                        # Remove common LaTeX commands like \hat, \bar, \tilde, etc.
-                        s = re.sub(r'\\[a-zA-Z]+', '', s)
-                        # Remove braces
-                        s = s.replace('{', '').replace('}', '')
-                        # Remove underscores and carets (subscript/superscript markers)
-                        s = s.replace('_', '').replace('^', '')
-                        return len(s)
-                    
                     fontsize_in_points = self.config.neuron_text_label_fontsize
-                    char_width = fontsize_in_points * 0.015  # Estimate for rendered math
-                    max_visual_len = max(visual_length(str(lbl)) for lbl in layer.neuron_labels) if layer.neuron_labels else 0
-                    text_width = max_visual_len * char_width
+                    
+                    # Find the longest label by estimating visual length
+                    import re
+                    def estimate_visual_length(s):
+                        s = str(s).replace('$', '')
+                        subscript_match = re.findall(r'_\{?(\d+)\}?', s)
+                        subscript_digits = sum(len(m) for m in subscript_match)
+                        s_clean = re.sub(r'\\[a-zA-Z]+', 'X', s)
+                        s_clean = s_clean.replace('{', '').replace('}', '').replace('_', '').replace('^', '')
+                        return len(s_clean) + subscript_digits * 0.7
+                    
+                    longest_label = max(layer.neuron_labels, key=estimate_visual_length)
+                    max_text_width, _ = self._get_text_dimensions(ax, str(longest_label), fontsize_in_points)
+                    # Add safety margin
+                    max_text_width *= 1.20
                     
                     # Small fixed margin for readability
-                    margin = 0.1
+                    margin = 0.15
                     
-                    # The label is centered at neuron_text_label_offset from neuron center
-                    total_label_extent = self.config.neuron_text_label_offset + text_width / 2 + margin
+                    # The label is positioned at neuron_text_label_offset from neuron center
+                    # For 'center' alignment, the label extends half its width on each side
+                    # For 'left' or 'right' alignment, it extends fully to one side
+                    alignment = self.config.neuron_text_label_alignment
+                    if layer_style.neuron_text_label_alignment is not None:
+                        alignment = layer_style.neuron_text_label_alignment
+                    
+                    if alignment == 'center':
+                        # Label centered at offset position, extends half width each direction
+                        total_label_extent = self.config.neuron_text_label_offset + max_text_width / 2 + margin
+                    elif alignment == 'left':
+                        # Label left-aligned at offset position, extends to the right
+                        total_label_extent = self.config.neuron_text_label_offset + max_text_width + margin
+                    else:  # 'right'
+                        # Label right-aligned at offset position, text is to the left of position
+                        total_label_extent = self.config.neuron_text_label_offset + margin
+                    
                     current_box_extent = self.config.neuron_radius + padding
-                    
                     extra_extension = max(0, total_label_extent - current_box_extent)
                     
                     # Extend box in the direction of the labels
