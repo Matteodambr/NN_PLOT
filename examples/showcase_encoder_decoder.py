@@ -257,18 +257,6 @@ plot_network(
 
 print("✓ Saved: showcase_outputs/encoder_decoder_comprehensive.png")
 
-# Also create a high-resolution version for README
-plot_network(
-    nn,
-    config=config,
-    title="Autoencoder Architecture: Complete Feature Showcase",
-    save_path="showcase_outputs/encoder_decoder_comprehensive_hires.png",
-    show=False,
-    dpi=600
-)
-
-print("✓ Saved: showcase_outputs/encoder_decoder_comprehensive_hires.png (high-res)")
-
 print("\n" + "=" * 70)
 print("Showcase Complete!")
 print("=" * 70)
