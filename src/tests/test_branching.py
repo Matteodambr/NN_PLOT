@@ -6,7 +6,7 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
-from src.NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer
+from src.NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer, VectorInput
 from src.NN_PLOTTING_UTILITIES import plot_network, PlotConfig
 
 # Create output directory
@@ -20,7 +20,7 @@ print("=" * 70)
 # Simple test: one parent with two children
 nn_test = NeuralNetwork("Test Branching")
 
-input_layer = FullyConnectedLayer(6, name="Input")
+input_layer = VectorInput(num_features=6, name="Input")
 nn_test.add_layer(input_layer)
 
 hidden1 = FullyConnectedLayer(10, activation="relu", name="Hidden1")

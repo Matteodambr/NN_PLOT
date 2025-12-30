@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 import matplotlib
 matplotlib.use('Agg')  # Use non-interactive backend
 
-from src.NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer
+from src.NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer, VectorInput
 from src.NN_PLOTTING_UTILITIES import plot_network, PlotConfig, LayerGroup
 
 # Create output directory at project root
@@ -28,7 +28,7 @@ def test_curly_brackets():
     print("\nTesting curly bracket style...")
     
     nn = NeuralNetwork("Curly Test")
-    l1_id = nn.add_layer(FullyConnectedLayer(5, name="L1"))
+    l1_id = nn.add_layer(VectorInput(num_features=5, name="L1"))
     l2_id = nn.add_layer(FullyConnectedLayer(5, activation="relu", name="L2"), parent_ids=[l1_id])
     nn.add_layer(FullyConnectedLayer(3, activation="softmax", name="L3"), parent_ids=[l2_id])
     
@@ -61,7 +61,7 @@ def test_square_brackets():
     print("\nTesting square bracket style...")
     
     nn = NeuralNetwork("Square Test")
-    l1_id = nn.add_layer(FullyConnectedLayer(5, name="L1"))
+    l1_id = nn.add_layer(VectorInput(num_features=5, name="L1"))
     l2_id = nn.add_layer(FullyConnectedLayer(5, activation="relu", name="L2"), parent_ids=[l1_id])
     nn.add_layer(FullyConnectedLayer(3, activation="softmax", name="L3"), parent_ids=[l2_id])
     
@@ -94,7 +94,7 @@ def test_straight_line():
     print("\nTesting straight line style...")
     
     nn = NeuralNetwork("Straight Test")
-    l1_id = nn.add_layer(FullyConnectedLayer(5, name="L1"))
+    l1_id = nn.add_layer(VectorInput(num_features=5, name="L1"))
     l2_id = nn.add_layer(FullyConnectedLayer(5, activation="relu", name="L2"), parent_ids=[l1_id])
     nn.add_layer(FullyConnectedLayer(3, activation="softmax", name="L3"), parent_ids=[l2_id])
     
@@ -127,7 +127,7 @@ def test_multiple_groups():
     print("\nTesting multiple groups...")
     
     nn = NeuralNetwork("Multiple Groups")
-    l1_id = nn.add_layer(FullyConnectedLayer(5, name="Input"))
+    l1_id = nn.add_layer(VectorInput(num_features=5, name="Input"))
     l2_id = nn.add_layer(FullyConnectedLayer(8, activation="relu", name="Hidden1"), parent_ids=[l1_id])
     l3_id = nn.add_layer(FullyConnectedLayer(8, activation="relu", name="Hidden2"), parent_ids=[l2_id])
     l4_id = nn.add_layer(FullyConnectedLayer(5, activation="relu", name="Hidden3"), parent_ids=[l3_id])
@@ -180,7 +180,7 @@ def test_encoder_decoder():
     print("\nTesting encoder-decoder architecture...")
     
     nn = NeuralNetwork("Encoder-Decoder")
-    input_id = nn.add_layer(FullyConnectedLayer(10, name="Input"))
+    input_id = nn.add_layer(VectorInput(num_features=10, name="Input"))
     enc1_id = nn.add_layer(FullyConnectedLayer(8, activation="relu", name="Enc1"), parent_ids=[input_id])
     enc2_id = nn.add_layer(FullyConnectedLayer(5, activation="relu", name="Enc2"), parent_ids=[enc1_id])
     latent_id = nn.add_layer(FullyConnectedLayer(3, activation="relu", name="Latent"), parent_ids=[enc2_id])
@@ -239,7 +239,7 @@ def test_customization():
     print("\nTesting customization options...")
     
     nn = NeuralNetwork("Customization Test")
-    l1_id = nn.add_layer(FullyConnectedLayer(6, name="Layer1"))
+    l1_id = nn.add_layer(VectorInput(num_features=6, name="Layer1"))
     l2_id = nn.add_layer(FullyConnectedLayer(6, activation="relu", name="Layer2"), parent_ids=[l1_id])
     nn.add_layer(FullyConnectedLayer(4, activation="softmax", name="Layer3"), parent_ids=[l2_id])
     

@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 import matplotlib
 matplotlib.use('Agg')  # Use non-interactive backend
 
-from src.NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer
+from src.NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer, VectorInput
 from src.NN_PLOTTING_UTILITIES import plot_network, PlotConfig, LayerGroup
 
 # Create output directory at project root
@@ -31,7 +31,7 @@ def test_single_layer_brace():
     print("\nTesting single-layer curly braces...")
     
     nn = NeuralNetwork("Single Layer Braces")
-    nn.add_layer(FullyConnectedLayer(6, name="Input"))
+    nn.add_layer(VectorInput(num_features=6, name="Input"))
     nn.add_layer(FullyConnectedLayer(8, activation="relu", name="Hidden1"))
     nn.add_layer(FullyConnectedLayer(8, activation="relu", name="Hidden2"))
     nn.add_layer(FullyConnectedLayer(4, activation="softmax", name="Output"))
@@ -59,7 +59,7 @@ def test_multi_layer_group_braces():
     print("\nTesting multi-layer group curly braces...")
     
     nn = NeuralNetwork("Multi-Layer Group Braces")
-    nn.add_layer(FullyConnectedLayer(6, name="Input"))
+    nn.add_layer(VectorInput(num_features=6, name="Input"))
     nn.add_layer(FullyConnectedLayer(8, activation="relu", name="Hidden1"))
     nn.add_layer(FullyConnectedLayer(8, activation="relu", name="Hidden2"))
     nn.add_layer(FullyConnectedLayer(4, activation="softmax", name="Output"))
@@ -95,7 +95,7 @@ def test_combined_single_and_group():
     print("\nTesting combined single-layer and group braces...")
     
     nn = NeuralNetwork("Combined Braces")
-    nn.add_layer(FullyConnectedLayer(6, name="Input"))
+    nn.add_layer(VectorInput(num_features=6, name="Input"))
     nn.add_layer(FullyConnectedLayer(8, activation="relu", name="Hidden1"))
     nn.add_layer(FullyConnectedLayer(8, activation="relu", name="Hidden2"))
     nn.add_layer(FullyConnectedLayer(4, activation="softmax", name="Output"))
@@ -135,7 +135,7 @@ def test_label_spacing():
     print("\nTesting label spacing (no overlap)...")
     
     nn = NeuralNetwork("Label Spacing Test")
-    nn.add_layer(FullyConnectedLayer(6, name="Layer1"))
+    nn.add_layer(VectorInput(num_features=6, name="Layer1"))
     nn.add_layer(FullyConnectedLayer(6, activation="relu", name="Layer2"))
     nn.add_layer(FullyConnectedLayer(4, activation="softmax", name="Layer3"))
     

@@ -6,7 +6,7 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
-from src.NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer
+from src.NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer, VectorInput
 from src.NN_PLOTTING_UTILITIES import plot_network, PlotConfig
 
 print("=" * 60)
@@ -16,7 +16,7 @@ print("=" * 60)
 # Test 1: Network with a very large layer
 print("\n[Test 1] Network with large hidden layer (100 neurons)")
 nn_large = NeuralNetwork("Large Layer Network")
-nn_large.add_layer(FullyConnectedLayer(num_neurons=5, name="Input"))
+nn_large.add_layer(VectorInput(num_features=5, name="Input"))
 nn_large.add_layer(FullyConnectedLayer(num_neurons=100, activation="relu", name="LargeHidden"))
 nn_large.add_layer(FullyConnectedLayer(num_neurons=3, activation="softmax", name="Output"))
 
@@ -56,7 +56,7 @@ print("  - Large layer collapsed to show first 5, dots, last 4")
 # Test 3: Network where all layers are large
 print("\n[Test 3] All layers are large")
 nn_all_large = NeuralNetwork("All Large Layers")
-nn_all_large.add_layer(FullyConnectedLayer(num_neurons=50, name="Input"))
+nn_all_large.add_layer(VectorInput(num_features=50, name="Input"))
 nn_all_large.add_layer(FullyConnectedLayer(num_neurons=100, activation="relu", name="Hidden1"))
 nn_all_large.add_layer(FullyConnectedLayer(num_neurons=80, activation="relu", name="Hidden2"))
 nn_all_large.add_layer(FullyConnectedLayer(num_neurons=30, activation="softmax", name="Output"))
@@ -79,7 +79,7 @@ print("  - All layers collapsed since all exceed 15 neurons")
 # Test 4: Mixed - some collapsed, some not
 print("\n[Test 4] Mixed network (some layers collapsed, some not)")
 nn_mixed = NeuralNetwork("Mixed Network")
-nn_mixed.add_layer(FullyConnectedLayer(num_neurons=3, name="SmallInput"))
+nn_mixed.add_layer(VectorInput(num_features=3, name="SmallInput"))
 nn_mixed.add_layer(FullyConnectedLayer(num_neurons=50, activation="relu", name="LargeHidden"))
 nn_mixed.add_layer(FullyConnectedLayer(num_neurons=8, activation="relu", name="MediumHidden"))
 nn_mixed.add_layer(FullyConnectedLayer(num_neurons=2, activation="softmax", name="SmallOutput"))
@@ -102,7 +102,7 @@ print("  - Only the 50-neuron layer is collapsed")
 # Test 5: With neuron labels enabled
 print("\n[Test 5] Collapsed layer with neuron indices shown")
 nn_labeled = NeuralNetwork("Labeled Network")
-nn_labeled.add_layer(FullyConnectedLayer(num_neurons=4, name="Input"))
+nn_labeled.add_layer(VectorInput(num_features=4, name="Input"))
 nn_labeled.add_layer(FullyConnectedLayer(num_neurons=30, activation="relu", name="Hidden"))
 nn_labeled.add_layer(FullyConnectedLayer(num_neurons=2, activation="softmax", name="Output"))
 

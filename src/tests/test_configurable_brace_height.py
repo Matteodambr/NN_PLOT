@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 import matplotlib
 matplotlib.use('Agg')  # Use non-interactive backend
 
-from src.NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer
+from src.NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer, VectorInput
 from src.NN_PLOTTING_UTILITIES import plot_network, PlotConfig, LayerGroup
 
 # Create output directory at project root
@@ -32,7 +32,7 @@ def test_default_height():
     print("\nTesting default brace height (0.15)...")
     
     nn = NeuralNetwork("Default Height")
-    nn.add_layer(FullyConnectedLayer(6, name="Input"))
+    nn.add_layer(VectorInput(num_features=6, name="Input"))
     nn.add_layer(FullyConnectedLayer(8, activation="relu", name="Hidden"))
     nn.add_layer(FullyConnectedLayer(4, activation="softmax", name="Output"))
     
@@ -58,7 +58,7 @@ def test_tall_height():
     print("\nTesting tall brace height (0.30)...")
     
     nn = NeuralNetwork("Tall Height")
-    nn.add_layer(FullyConnectedLayer(6, name="Input"))
+    nn.add_layer(VectorInput(num_features=6, name="Input"))
     nn.add_layer(FullyConnectedLayer(8, activation="relu", name="Hidden"))
     nn.add_layer(FullyConnectedLayer(4, activation="softmax", name="Output"))
     
@@ -85,7 +85,7 @@ def test_short_height():
     print("\nTesting short brace height (0.08)...")
     
     nn = NeuralNetwork("Short Height")
-    nn.add_layer(FullyConnectedLayer(6, name="Input"))
+    nn.add_layer(VectorInput(num_features=6, name="Input"))
     nn.add_layer(FullyConnectedLayer(8, activation="relu", name="Hidden"))
     nn.add_layer(FullyConnectedLayer(4, activation="softmax", name="Output"))
     
@@ -112,7 +112,7 @@ def test_group_bracket_heights():
     print("\nTesting group brackets with different heights...")
     
     nn = NeuralNetwork("Group Heights")
-    nn.add_layer(FullyConnectedLayer(6, name="L1"))
+    nn.add_layer(VectorInput(num_features=6, name="L1"))
     nn.add_layer(FullyConnectedLayer(8, activation="relu", name="L2"))
     nn.add_layer(FullyConnectedLayer(8, activation="relu", name="L3"))
     nn.add_layer(FullyConnectedLayer(4, activation="softmax", name="L4"))

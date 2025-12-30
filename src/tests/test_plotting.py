@@ -12,6 +12,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 from src.NN_DEFINITION_UTILITIES import (
     NeuralNetwork,
     FullyConnectedLayer,
+    VectorInput,
     NetworkType
 )
 from src.NN_PLOTTING_UTILITIES import plot_network, PlotConfig
@@ -36,7 +37,7 @@ def example_1_simple_network():
     )
     
     # Add layers
-    nn.add_layer(FullyConnectedLayer(num_neurons=4, name="Input"))
+    nn.add_layer(VectorInput(num_features=4, name="Input"))
     nn.add_layer(FullyConnectedLayer(num_neurons=6, activation="relu", name="Hidden"))
     nn.add_layer(FullyConnectedLayer(num_neurons=3, activation="softmax", name="Output"))
     
@@ -67,7 +68,7 @@ def example_2_deeper_network():
     )
     
     # Create a deeper network
-    nn.add_layer(FullyConnectedLayer(num_neurons=8, name="Input"))
+    nn.add_layer(VectorInput(num_features=8, name="Input"))
     nn.add_layer(FullyConnectedLayer(num_neurons=10, activation="relu", name="Hidden 1"))
     nn.add_layer(FullyConnectedLayer(num_neurons=8, activation="relu", name="Hidden 2"))
     nn.add_layer(FullyConnectedLayer(num_neurons=6, activation="relu", name="Hidden 3"))
@@ -109,7 +110,7 @@ def example_3_branching_network():
     )
     
     # Shared backbone
-    input_id = nn.add_layer(FullyConnectedLayer(num_neurons=6, name="Input"))
+    input_id = nn.add_layer(VectorInput(num_features=6, name="Input"))
     shared_id = nn.add_layer(FullyConnectedLayer(num_neurons=8, activation="relu", name="Shared"))
     
     # Branch 1
@@ -168,7 +169,7 @@ def example_4_mnist_network():
     )
     
     # Create a network with large layers
-    nn.add_layer(FullyConnectedLayer(num_neurons=784, name="Input (28x28)"))
+    nn.add_layer(VectorInput(num_features=784, name="Input (28x28)"))
     nn.add_layer(FullyConnectedLayer(num_neurons=128, activation="relu", name="Hidden 1"))
     nn.add_layer(FullyConnectedLayer(num_neurons=64, activation="relu", name="Hidden 2"))
     nn.add_layer(FullyConnectedLayer(num_neurons=10, activation="softmax", name="Output"))
@@ -210,7 +211,7 @@ def example_5_multi_branch():
     )
     
     # Input and shared layer
-    input_id = nn.add_layer(FullyConnectedLayer(num_neurons=5, name="Input"))
+    input_id = nn.add_layer(VectorInput(num_features=5, name="Input"))
     shared_id = nn.add_layer(FullyConnectedLayer(num_neurons=8, activation="relu", name="Shared"))
     
     # Create 3 branches
@@ -255,7 +256,7 @@ def example_6_custom_styling():
     
     nn = NeuralNetwork(name="Styled Network")
     
-    nn.add_layer(FullyConnectedLayer(num_neurons=5, name="Input"))
+    nn.add_layer(VectorInput(num_features=5, name="Input"))
     nn.add_layer(FullyConnectedLayer(num_neurons=7, activation="relu", name="Hidden"))
     nn.add_layer(FullyConnectedLayer(num_neurons=3, activation="softmax", name="Output"))
     
