@@ -11,7 +11,7 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from src.NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer
+from src.NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer, VectorInput
 from src.NN_PLOTTING_UTILITIES import plot_network, PlotConfig
 
 # Create output directory
@@ -23,7 +23,7 @@ print("=" * 70)
 
 # Create a simple network for demonstration
 nn = NeuralNetwork("Background Demo")
-nn.add_layer(FullyConnectedLayer(4, name="Input"))
+nn.add_layer(VectorInput(num_features=4, name="Input"))
 nn.add_layer(FullyConnectedLayer(6, activation="relu", name="Hidden"))
 nn.add_layer(FullyConnectedLayer(3, activation="softmax", name="Output"))
 

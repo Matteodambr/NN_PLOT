@@ -11,7 +11,7 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from src.NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer
+from src.NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer, VectorInput
 from src.NN_PLOTTING_UTILITIES import plot_network, PlotConfig, LayerStyle
 
 # Create output directory
@@ -26,8 +26,8 @@ print("="*60)
 print("\n1. Creating network with different alignments per layer...")
 nn = NeuralNetwork("Per-Layer Alignment")
 
-nn.add_layer(FullyConnectedLayer(
-    num_neurons=4,
+nn.add_layer(VectorInput(
+    num_features=4,
     name="Input",
     neuron_labels=["Age", "Income", "Credit Score", "Debt Ratio"],
     label_position="left"
@@ -73,8 +73,8 @@ print("✅ Created: test_outputs/demo_per_layer_alignment_mixed.png")
 print("\n2. Creating network with LaTeX and per-layer alignments...")
 nn_latex = NeuralNetwork("LaTeX Per-Layer")
 
-nn_latex.add_layer(FullyConnectedLayer(
-    num_neurons=3,
+nn_latex.add_layer(VectorInput(
+    num_features=3,
     name="Input",
     neuron_labels=[r"$x_1$", r"$x_2$", r"$x_3$"],
     label_position="left"
@@ -132,8 +132,8 @@ print("✅ Created: test_outputs/demo_per_layer_latex_mixed.png")
 print("\n3. Creating practical example with emphasized input features...")
 nn_practical = NeuralNetwork("Credit Risk Model")
 
-nn_practical.add_layer(FullyConnectedLayer(
-    num_neurons=5,
+nn_practical.add_layer(VectorInput(
+    num_features=5,
     name="Features",
     neuron_labels=[
         "Annual Income",

@@ -14,7 +14,7 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from src.NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer
+from src.NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer, VectorInput
 from src.NN_PLOTTING_UTILITIES import plot_network, PlotConfig, LayerGroup
 
 # Create output directory
@@ -29,7 +29,7 @@ print("="*70)
 print("\n1. Creating Encoder-Decoder network with curly brackets...")
 nn_enc_dec = NeuralNetwork("Encoder-Decoder")
 
-input_layer = FullyConnectedLayer(10, name="Input")
+input_layer = VectorInput(num_features=10, name="Input")
 input_id = nn_enc_dec.add_layer(input_layer)
 
 enc1 = FullyConnectedLayer(8, activation="relu", name="Encoder_1")
@@ -108,7 +108,7 @@ print("✅ Created: test_outputs/demo_grouping_encoder_decoder.png")
 print("\n2. Creating network with different bracket styles...")
 nn_styles = NeuralNetwork("Bracket Styles")
 
-l1_id = nn_styles.add_layer(FullyConnectedLayer(5, name="Layer_1"))
+l1_id = nn_styles.add_layer(VectorInput(num_features=5, name="Layer_1"))
 l2_id = nn_styles.add_layer(FullyConnectedLayer(5, activation="relu", name="Layer_2"), parent_ids=[l1_id])
 l3_id = nn_styles.add_layer(FullyConnectedLayer(5, activation="relu", name="Layer_3"), parent_ids=[l2_id])
 l4_id = nn_styles.add_layer(FullyConnectedLayer(5, activation="relu", name="Layer_4"), parent_ids=[l3_id])
@@ -166,7 +166,7 @@ print("✅ Created: test_outputs/demo_grouping_bracket_styles.png")
 print("\n3. Creating CNN-style architecture with grouped components...")
 nn_cnn = NeuralNetwork("CNN Architecture")
 
-conv1_id = nn_cnn.add_layer(FullyConnectedLayer(32, name="Conv1"))
+conv1_id = nn_cnn.add_layer(VectorInput(num_features=32, name="Conv1"))
 conv2_id = nn_cnn.add_layer(FullyConnectedLayer(64, activation="relu", name="Conv2"), parent_ids=[conv1_id])
 pool_id = nn_cnn.add_layer(FullyConnectedLayer(32, activation="relu", name="Pool"), parent_ids=[conv2_id])
 
@@ -218,7 +218,7 @@ print("✅ Created: test_outputs/demo_grouping_cnn_style.png")
 print("\n4. Creating simple network with straight line grouping...")
 nn_simple = NeuralNetwork("Simple Grouping")
 
-i_id = nn_simple.add_layer(FullyConnectedLayer(4, name="Input"))
+i_id = nn_simple.add_layer(VectorInput(num_features=4, name="Input"))
 h1_id = nn_simple.add_layer(FullyConnectedLayer(6, activation="relu", name="Hidden1"), parent_ids=[i_id])
 h2_id = nn_simple.add_layer(FullyConnectedLayer(6, activation="relu", name="Hidden2"), parent_ids=[h1_id])
 nn_simple.add_layer(FullyConnectedLayer(3, activation="softmax", name="Output"), parent_ids=[h2_id])

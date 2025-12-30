@@ -16,6 +16,7 @@ from NN_PLOTTING_UTILITIES import (
     LayerStyle,
     NetworkPlotter
 )
+from NN_DEFINITION_UTILITIES import VectorInput
 
 print("=" * 70)
 print("Layer Boxes Demonstration")
@@ -30,7 +31,7 @@ print("-" * 70)
 network1 = NeuralNetwork("Boxed_Heads_Network")
 
 # Input layer
-input_layer = FullyConnectedLayer(num_neurons=6, name="Input")
+input_layer = VectorInput(num_features=6, name="Input")
 input_id = network1.add_layer(input_layer)
 
 # Hidden layers
@@ -99,7 +100,7 @@ print("-" * 70)
 network2 = NeuralNetwork("Multi_Style_Network")
 
 # Build a simple linear network
-input2 = FullyConnectedLayer(num_neurons=4, name="Input")
+input2 = VectorInput(num_features=4, name="Input")
 input2_id = network2.add_layer(input2)
 
 hidden_a = FullyConnectedLayer(num_neurons=8, name="Encoder")
@@ -170,7 +171,7 @@ print("-" * 70)
 network3 = NeuralNetwork("Wide_Boxed_Network")
 
 # Create a network similar to CEAS2025 but with boxes
-inp3 = FullyConnectedLayer(num_neurons=10, name="Input")
+inp3 = VectorInput(num_features=10, name="Input")
 inp3_id = network3.add_layer(inp3)
 
 h1 = FullyConnectedLayer(num_neurons=200, name="Hidden_1")
@@ -244,7 +245,7 @@ print("-" * 70)
 
 network4 = NeuralNetwork("Minimal_Boxes")
 
-inp4 = FullyConnectedLayer(num_neurons=3, name="Input")
+inp4 = VectorInput(num_features=3, name="Input")
 inp4_id = network4.add_layer(inp4)
 
 h4 = FullyConnectedLayer(num_neurons=5, name="Hidden")

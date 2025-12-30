@@ -9,7 +9,7 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from src.NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer
+from src.NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer, VectorInput
 from src.NN_PLOTTING_UTILITIES import plot_network, PlotConfig, LayerStyle
 
 # Create output directory
@@ -28,7 +28,7 @@ print("-" * 70)
 
 nn1 = NeuralNetwork("Simple Classifier")
 
-input_layer = FullyConnectedLayer(num_neurons=4, name="Input")
+input_layer = VectorInput(num_features=4, name="Input")
 nn1.add_layer(input_layer)
 
 hidden = FullyConnectedLayer(num_neurons=8, activation="relu", name="Hidden")
@@ -63,7 +63,7 @@ print("-" * 70)
 
 nn2 = NeuralNetwork("Image Classifier")
 
-input_layer2 = FullyConnectedLayer(num_neurons=784, name="Input")
+input_layer2 = VectorInput(num_features=784, name="Input")
 nn2.add_layer(input_layer2)
 
 hidden2 = FullyConnectedLayer(num_neurons=128, activation="relu", name="Hidden")
@@ -124,7 +124,7 @@ print("-" * 70)
 
 nn4 = NeuralNetwork("Regression Model")
 
-input_layer4 = FullyConnectedLayer(num_neurons=3, name="Input")
+input_layer4 = VectorInput(num_features=3, name="Input")
 nn4.add_layer(input_layer4)
 
 hidden4 = FullyConnectedLayer(num_neurons=10, activation="tanh", name="Hidden")
@@ -159,7 +159,7 @@ print("-" * 70)
 
 nn5 = NeuralNetwork("Multi-Task Network")
 
-input_layer5 = FullyConnectedLayer(num_neurons=6, name="Input")
+input_layer5 = VectorInput(num_features=6, name="Input")
 nn5.add_layer(input_layer5)
 
 hidden5 = FullyConnectedLayer(num_neurons=100, activation="relu", name="Hidden")

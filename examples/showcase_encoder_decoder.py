@@ -19,7 +19,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 import matplotlib
 matplotlib.use('Agg')
 
-from NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer
+from NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer, VectorInput
 from NN_PLOTTING_UTILITIES import plot_network, PlotConfig, LayerGroup, LayerStyle
 
 os.makedirs("showcase_outputs", exist_ok=True)
@@ -32,8 +32,8 @@ print("=" * 70)
 nn = NeuralNetwork("Autoencoder for Dimensionality Reduction")
 
 # Input layer
-input_id = nn.add_layer(FullyConnectedLayer(
-    num_neurons=256,
+input_id = nn.add_layer(VectorInput(
+    num_features=256,
     name="Input Layer",
     neuron_labels=[f"$x_{{{i}}}$" for i in range(256, 0, -1)],  # Full array of labels
     label_position="left"

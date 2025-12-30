@@ -19,7 +19,7 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 import matplotlib.pyplot as plt
-from src.NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer
+from src.NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer, VectorInput
 from src.NN_PLOTTING_UTILITIES import plot_network, PlotConfig, LayerStyle
 
 # Create output directory
@@ -36,7 +36,7 @@ print("\n1. Basic Network")
 print("-" * 70)
 
 nn_basic = NeuralNetwork("Basic Neural Network")
-nn_basic.add_layer(FullyConnectedLayer(4, name="Input"))
+nn_basic.add_layer(VectorInput(num_features=4, name="Input"))
 nn_basic.add_layer(FullyConnectedLayer(6, activation="relu", name="Hidden"))
 nn_basic.add_layer(FullyConnectedLayer(3, activation="softmax", name="Output"))
 
@@ -55,7 +55,7 @@ print("\n2. Custom Layer Styling")
 print("-" * 70)
 
 nn_styled = NeuralNetwork("Styled Network")
-nn_styled.add_layer(FullyConnectedLayer(4, name="Input"))
+nn_styled.add_layer(VectorInput(num_features=4, name="Input"))
 nn_styled.add_layer(FullyConnectedLayer(6, activation="relu", name="Hidden"))
 nn_styled.add_layer(FullyConnectedLayer(3, activation="softmax", name="Output"))
 
@@ -98,8 +98,8 @@ print("\n3. Custom Neuron Labels (Plain Text)")
 print("-" * 70)
 
 nn_labels = NeuralNetwork("Labeled Network")
-nn_labels.add_layer(FullyConnectedLayer(
-    num_neurons=5,
+nn_labels.add_layer(VectorInput(
+    num_features=5,
     name="Input Features",
     neuron_labels=[
         "Age",
@@ -138,8 +138,8 @@ print("\n4. LaTeX Mathematical Notation")
 print("-" * 70)
 
 nn_latex = NeuralNetwork("LaTeX Math Network")
-nn_latex.add_layer(FullyConnectedLayer(
-    num_neurons=3,
+nn_latex.add_layer(VectorInput(
+    num_features=3,
     name="Input",
     neuron_labels=[r"$x_1$", r"$x_2$", r"$x_3$"],
     label_position="left"
@@ -178,8 +178,8 @@ print("\n5. Bold Math and Complex LaTeX")
 print("-" * 70)
 
 nn_bold = NeuralNetwork("Bold Math Network")
-nn_bold.add_layer(FullyConnectedLayer(
-    num_neurons=4,
+nn_bold.add_layer(VectorInput(
+    num_features=4,
     name="Input",
     neuron_labels=[
         r"$\mathbf{x}_1$",      # Bold
@@ -213,7 +213,7 @@ print("\n6. Neuron Numbering")
 print("-" * 70)
 
 nn_numbering = NeuralNetwork("Numbered Network")
-nn_numbering.add_layer(FullyConnectedLayer(6, name="Input"))
+nn_numbering.add_layer(VectorInput(num_features=6, name="Input"))
 nn_numbering.add_layer(FullyConnectedLayer(4, activation="relu", name="Hidden"))
 nn_numbering.add_layer(FullyConnectedLayer(3, activation="softmax", name="Output"))
 
@@ -246,8 +246,8 @@ print("\n7. Layer Collapsing")
 print("-" * 70)
 
 nn_large = NeuralNetwork("Large Network with Collapsing")
-nn_large.add_layer(FullyConnectedLayer(
-    num_neurons=25,
+nn_large.add_layer(VectorInput(
+    num_features=25,
     name="Large Input",
     neuron_labels=[f"Feature {i+1}" for i in range(25)],
     label_position="left"
@@ -284,7 +284,7 @@ print("\n8. Export Formats and DPI Control")
 print("-" * 70)
 
 nn_export = NeuralNetwork("Export Demo")
-nn_export.add_layer(FullyConnectedLayer(3, name="Input"))
+nn_export.add_layer(VectorInput(num_features=3, name="Input"))
 nn_export.add_layer(FullyConnectedLayer(4, activation="relu", name="Hidden"))
 nn_export.add_layer(FullyConnectedLayer(2, activation="sigmoid", name="Output"))
 
@@ -335,7 +335,7 @@ print("\n9. Background Colors")
 print("-" * 70)
 
 nn_bg = NeuralNetwork("Background Demo")
-nn_bg.add_layer(FullyConnectedLayer(3, name="Input"))
+nn_bg.add_layer(VectorInput(num_features=3, name="Input"))
 nn_bg.add_layer(FullyConnectedLayer(4, activation="relu", name="Hidden"))
 nn_bg.add_layer(FullyConnectedLayer(2, activation="sigmoid", name="Output"))
 
@@ -379,8 +379,8 @@ print("\n10. Font Customization")
 print("-" * 70)
 
 nn_font = NeuralNetwork("Font Demo")
-nn_font.add_layer(FullyConnectedLayer(
-    num_neurons=3,
+nn_font.add_layer(VectorInput(
+    num_features=3,
     name="Input",
     neuron_labels=[r"$x_1$", r"$x_2$", r"$x_3$"],
     label_position="left"
@@ -432,8 +432,8 @@ print("\n11. Show/Hide Various Elements")
 print("-" * 70)
 
 nn_visibility = NeuralNetwork("Visibility Demo")
-nn_visibility.add_layer(FullyConnectedLayer(
-    num_neurons=4,
+nn_visibility.add_layer(VectorInput(
+    num_features=4,
     name="Input Layer",
     neuron_labels=["A", "B", "C", "D"],
     label_position="left"
@@ -500,8 +500,8 @@ print("-" * 70)
 nn_realistic = NeuralNetwork("Customer Churn Prediction Model")
 
 # Input with styling and labels
-nn_realistic.add_layer(FullyConnectedLayer(
-    num_neurons=8,
+nn_realistic.add_layer(VectorInput(
+    num_features=8,
     name="Customer Features",
     neuron_labels=[
         "Account Age",

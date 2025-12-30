@@ -13,6 +13,7 @@ from NN_PLOTTING_UTILITIES import (
     LayerStyle,
     NetworkPlotter
 )
+from NN_DEFINITION_UTILITIES import VectorInput
 
 print("=" * 70)
 print("Text Labels Outside Boxes & Spacing Multiplier Demo")
@@ -27,8 +28,8 @@ print("-" * 70)
 network1 = NeuralNetwork("Labels_Outside_Boxes")
 
 # Create network with text labels
-input_layer = FullyConnectedLayer(
-    num_neurons=3,
+input_layer = VectorInput(
+    num_features=3,
     name="Input",
     neuron_labels=[r"$x_1$", r"$x_2$", r"$x_3$"],
     label_position="left"
@@ -136,8 +137,8 @@ print("-" * 70)
 
 network3 = NeuralNetwork("Branching_Default")
 
-inp = FullyConnectedLayer(
-    num_neurons=4,
+inp = VectorInput(
+    num_features=4,
     name="Input",
     neuron_labels=[r"$i_1$", r"$i_2$", r"$i_3$", r"$i_4$"],
     label_position="left"
@@ -249,7 +250,7 @@ print("-" * 70)
 
 # Simple network for comparison
 network5 = NeuralNetwork("Spacing_Compare")
-i = network5.add_layer(FullyConnectedLayer(num_neurons=3, name="A"))
+i = network5.add_layer(VectorInput(num_features=3, name="A"))
 h = network5.add_layer(FullyConnectedLayer(num_neurons=4, name="B"))
 network5.add_layer(FullyConnectedLayer(num_neurons=2, name="C"))
 

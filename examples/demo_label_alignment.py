@@ -12,7 +12,7 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from src.NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer
+from src.NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer, VectorInput
 from src.NN_PLOTTING_UTILITIES import plot_network, PlotConfig
 
 # Create output directory
@@ -27,8 +27,8 @@ print("="*60)
 print("\n1. Creating network with LEFT-aligned labels...")
 nn_left = NeuralNetwork("Left Alignment")
 
-nn_left.add_layer(FullyConnectedLayer(
-    num_neurons=4,
+nn_left.add_layer(VectorInput(
+    num_features=4,
     name="Input",
     neuron_labels=["Feature A", "Feature B", "Feature C", "Feature D"],
     label_position="left"
@@ -63,8 +63,8 @@ print("✅ Created: test_outputs/demo_alignment_left.png")
 print("\n2. Creating network with CENTER-aligned labels (default)...")
 nn_center = NeuralNetwork("Center Alignment")
 
-nn_center.add_layer(FullyConnectedLayer(
-    num_neurons=4,
+nn_center.add_layer(VectorInput(
+    num_features=4,
     name="Input",
     neuron_labels=["Feature A", "Feature B", "Feature C", "Feature D"],
     label_position="left"
@@ -99,8 +99,8 @@ print("✅ Created: test_outputs/demo_alignment_center.png")
 print("\n3. Creating network with RIGHT-aligned labels...")
 nn_right = NeuralNetwork("Right Alignment")
 
-nn_right.add_layer(FullyConnectedLayer(
-    num_neurons=4,
+nn_right.add_layer(VectorInput(
+    num_features=4,
     name="Input",
     neuron_labels=["Feature A", "Feature B", "Feature C", "Feature D"],
     label_position="left"
@@ -135,8 +135,8 @@ print("✅ Created: test_outputs/demo_alignment_right.png")
 print("\n4. Creating network with LaTeX labels and different alignments...")
 nn_latex = NeuralNetwork("LaTeX Alignment")
 
-nn_latex.add_layer(FullyConnectedLayer(
-    num_neurons=3,
+nn_latex.add_layer(VectorInput(
+    num_features=3,
     name="Input",
     neuron_labels=[r"$x_1$", r"$x_2$", r"$x_3$"],
     label_position="left"

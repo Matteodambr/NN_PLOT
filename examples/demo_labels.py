@@ -10,7 +10,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 import matplotlib
 matplotlib.use('Agg')  # Use non-interactive backend
 
-from NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer
+from NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer, VectorInput
 from NN_PLOTTING_UTILITIES import plot_network, PlotConfig, LayerStyle
 
 os.makedirs("test_outputs", exist_ok=True)
@@ -21,8 +21,8 @@ print("Creating labeled neural network example...")
 nn = NeuralNetwork("Customer Churn Prediction")
 
 # Input layer - features with plain text labels on the left
-nn.add_layer(FullyConnectedLayer(
-    num_neurons=5,
+nn.add_layer(VectorInput(
+    num_features=5,
     name="Input Features",
     neuron_labels=[
         "Monthly Charges",
@@ -80,8 +80,8 @@ print("Creating LaTeX math example...")
 nn_math = NeuralNetwork("Mathematical Model")
 
 # Input with LaTeX math notation
-nn_math.add_layer(FullyConnectedLayer(
-    num_neurons=3,
+nn_math.add_layer(VectorInput(
+    num_features=3,
     name="Input",
     neuron_labels=[r"$x_1$", r"$x_2$", r"$x_3$"],
     label_position="left"
@@ -137,8 +137,8 @@ print("\nCreating comprehensive labeling example (all three types)...")
 nn_all = NeuralNetwork("Complete Labeling Demo")
 
 # Input layer with neuron labels
-input_layer = FullyConnectedLayer(
-    num_neurons=4,
+input_layer = VectorInput(
+    num_features=4,
     name="Input Layer",
     neuron_labels=["Age", "Income", "Credit Score", "Debt Ratio"],
     label_position="left"

@@ -23,6 +23,8 @@ class NetworkType(Enum):
 class LayerType(Enum):
     """Enumeration of supported layer types."""
     FULLY_CONNECTED = "fully_connected"
+    INPUT_VECTOR = "input_vector"
+    INPUT_IMAGE = "input_image"
     # Future types can be added here:
     # CONVOLUTIONAL = "convolutional"
     # POOLING = "pooling"
@@ -178,6 +180,111 @@ class FullyConnectedLayer(Layer):
         )
 
 
+class InputLayer(Layer):
+    """
+    Abstract base class for all input layer types.
+    
+    Input layers are automatically treated as root layers (no parents) when added
+    to a network. They represent the entry points for data into the network.
+    
+    Subclasses:
+        - VectorInput: For 1D vector inputs (like tabular data)
+        - ImageInput: For 2D/3D image inputs (future)
+    """
+    
+    @property
+    def is_input_layer(self) -> bool:
+        """Mark this as an input layer for automatic root detection."""
+        return True
+
+
+@dataclass
+class VectorInput(InputLayer):
+    """
+    Represents a vector (1D) input layer for the neural network.
+    
+    This is used for tabular/structured data where the input is a 1D vector of features.
+    VectorInput layers are automatically treated as root layers (no parents).
+    
+    Attributes:
+        num_features (int): Number of input features (vector dimensions).
+        name (Optional[str]): Human-readable name for the layer.
+        layer_id (str): Unique identifier for this layer (auto-generated).
+        neuron_labels (Optional[List[str]]): Text labels for each neuron (supports LaTeX).
+        label_position (str): Position of labels relative to neurons ('left' or 'right').
+    
+    Example:
+        >>> input_layer = VectorInput(num_features=10, name="Input")
+        >>> print(input_layer.get_output_size())
+        10
+        >>> 
+        >>> # With LaTeX labels
+        >>> input_layer = VectorInput(
+        ...     num_features=3,
+        ...     name="Features",
+        ...     neuron_labels=[r"$x_1$", r"$x_2$", r"$x_3$"],
+        ...     label_position="left"
+        ... )
+    """
+    num_features: int
+    name: Optional[str] = None
+    layer_id: Optional[str] = None
+    neuron_labels: Optional[List[str]] = None
+    label_position: str = "left"
+    
+    def __post_init__(self):
+        """Validate the layer configuration after initialization."""
+        if self.num_features <= 0:
+            raise ValueError("Number of features must be positive")
+        
+        # Validate neuron_labels if provided
+        if self.neuron_labels is not None:
+            if len(self.neuron_labels) != self.num_features:
+                raise ValueError(
+                    f"Number of neuron_labels ({len(self.neuron_labels)}) must match "
+                    f"num_features ({self.num_features})"
+                )
+        
+        # Validate label_position
+        if self.label_position not in ("left", "right"):
+            raise ValueError("label_position must be 'left' or 'right'")
+        
+        # Initialize the base Layer class
+        super().__init__(
+            layer_type=LayerType.INPUT_VECTOR,
+            name=self.name,
+            layer_id=self.layer_id
+        )
+    
+    @property
+    def num_neurons(self) -> int:
+        """Alias for num_features to maintain compatibility with plotting."""
+        return self.num_features
+    
+    def get_output_size(self) -> int:
+        """
+        Get the output size of this input layer.
+        
+        Returns:
+            int: Number of features (output units) in this layer.
+        """
+        return self.num_features
+    
+    def __str__(self) -> str:
+        """Return a human-readable string representation of the layer."""
+        parts = [f"VectorInput({self.num_features} features)"]
+        if self.name:
+            parts.append(f"name='{self.name}'")
+        return ", ".join(parts)
+    
+    def __repr__(self) -> str:
+        """Return a developer-friendly string representation of the layer."""
+        return (
+            f"VectorInput(features={self.num_features}, name='{self.name}', "
+            f"id='{self.layer_id[:8]}...')"
+        )
+
+
 class NeuralNetwork:
     """
     A class to represent and store neural network structure information.
@@ -234,7 +341,8 @@ class NeuralNetwork:
     def add_layer(
         self, 
         layer: Layer, 
-        parent_ids: Optional[List[str]] = None
+        parent_ids: Optional[List[str]] = None,
+        is_input: bool = False
     ) -> str:
         """
         Add a layer to the neural network.
@@ -243,12 +351,16 @@ class NeuralNetwork:
         will be connected to the last added layer (linear/sequential structure).
         If parent_ids is provided, the layer will be connected to the specified parent(s).
         If the network is empty, the layer becomes the first layer with no parents.
+        Use is_input=True to create an independent input layer (no parents) for multi-input networks.
         
         Args:
             layer (Layer): The layer object to add (e.g., FullyConnectedLayer).
             parent_ids (Optional[List[str]]): List of parent layer IDs. 
                 If None and network is not empty, connects to the last layer.
                 If None and network is empty, creates the first layer with no parents.
+            is_input (bool): If True, creates an independent input layer with no parents.
+                Use this for multi-input networks where you need multiple root layers.
+                Equivalent to passing parent_ids=[].
         
         Returns:
             str: The unique ID of the added layer.
@@ -267,7 +379,13 @@ class NeuralNetwork:
         self._layer_order.append(layer_id)
         
         # Handle connections
-        if parent_ids is None:
+        # Automatically detect InputLayer types (VectorInput, ImageInput, etc.)
+        is_input_layer = getattr(layer, 'is_input_layer', False)
+        
+        if is_input or is_input_layer:
+            # Explicitly create an independent input layer (no parents)
+            parent_ids = []
+        elif parent_ids is None:
             # Linear structure: connect to the last layer if one exists
             if len(self._layer_order) > 1:
                 parent_id = self._layer_order[-2]  # The previous layer
@@ -342,6 +460,33 @@ class NeuralNetwork:
         root_layers = [layer_id for layer_id in self.layers.keys() 
                       if layer_id not in all_children]
         return root_layers
+    
+    def has_input_layer(self) -> bool:
+        """
+        Check if the network has at least one input layer.
+        
+        An input layer is defined as either:
+        - A layer that inherits from InputLayer (e.g., VectorInput)
+        - A root layer (layer with no parents)
+        
+        Returns:
+            bool: True if the network has at least one input layer.
+        """
+        root_layers = self.get_root_layers()
+        return len(root_layers) > 0
+    
+    def get_input_layers(self) -> List[str]:
+        """
+        Get all input layers in the network.
+        
+        Input layers are root layers (layers with no parents), which includes
+        both VectorInput layers and any FullyConnectedLayer added as the first
+        layer or with is_input=True.
+        
+        Returns:
+            List[str]: List of input layer IDs.
+        """
+        return self.get_root_layers()
     
     def get_leaf_layers(self) -> List[str]:
         """

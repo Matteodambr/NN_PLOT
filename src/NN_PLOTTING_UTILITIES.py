@@ -159,6 +159,9 @@ class PlotConfig:
         layer_spacing_multiplier: Multiplier for the overall network width. Values > 1.0 increase
                                  spacing between layers proportionally, making the network wider.
                                  Default is 1.0 (no scaling). Example: 1.5 makes network 50% wider.
+        branch_spacing: Vertical spacing between parallel layers at the same level (in plot units).
+                       Controls how close or far apart layers are when the network branches.
+                       Default is 3.0. Lower values bring branched layers closer together.
         layer_variable_names: Dictionary mapping layer IDs or names to variable name labels.
                              Example: {'Input': 'Input Variables: x, y, z', 'Output_Head_1': 'Actions: a1, a2'}
         show_layer_variable_names: Whether to show the variable name labels for layers.
@@ -185,6 +188,8 @@ class PlotConfig:
                                     Only displays if the layer has an activation function. Default is False.
         layer_names_align_bottom: If True, all layer name labels appear at the same height at the bottom of the plot.
                                  If False (default), each label appears below its respective layer.
+        layer_names_offset: Distance (in plot units) between the bottom of a layer and its label.
+                           Only applies when layer_names_align_bottom=False. Default is 0.8.
         layer_names_bottom_offset: Distance (in plot units) of aligned layer labels from the bottom of the plot.
                                   Only applies when layer_names_align_bottom=True. Default is 2.0.
         layer_names_show_box: If True (default), layer name labels have a rounded box background.
@@ -212,9 +217,9 @@ class PlotConfig:
     neuron_radius: float = 0.3
     layer_spacing: float = 3.0
     neuron_spacing: float = 1.0
-    connection_alpha: float = 0.3
+    connection_alpha: float = 0.65
     connection_color: str = 'gray'
-    connection_linewidth: float = 1.5
+    connection_linewidth: float = 2.0
     neuron_color: str = 'lightblue'
     neuron_edge_color: str = 'navy'
     neuron_edge_width: float = 1.5
@@ -230,7 +235,7 @@ class PlotConfig:
     show_layer_names: bool = True
     show_title: bool = True
     title_fontsize: int = 16
-    title_offset: float = 20
+    title_offset: float = 10
     layer_name_fontsize: int = 12
     max_neurons_per_layer: int = 20
     collapse_neurons_start: int = 10
@@ -238,6 +243,7 @@ class PlotConfig:
     layer_styles: Dict[str, LayerStyle] = field(default_factory=dict)
     background_color: str = 'white'
     layer_spacing_multiplier: float = 1.0
+    branch_spacing: float = 3.0
     layer_variable_names: Dict[str, str] = field(default_factory=dict)
     show_layer_variable_names: bool = True
     layer_variable_names_fontsize: int = 11
@@ -251,6 +257,7 @@ class PlotConfig:
     layer_names_show_dim: bool = True
     layer_names_show_activation: bool = False
     layer_names_align_bottom: bool = False
+    layer_names_offset: float = 0.4
     layer_names_bottom_offset: float = 2.0
     layer_names_show_box: bool = True
     layer_names_line_styles: List[str] = field(default_factory=list)
@@ -407,10 +414,17 @@ class NetworkPlotter:
             matplotlib Figure object
             
         Raises:
-            ValueError: If network is empty or has unsupported layer types
+            ValueError: If network is empty, has no input layers, or has unsupported layer types
         """
         if network.num_layers() == 0:
             raise ValueError("Cannot plot an empty network")
+        
+        # Check that network has at least one input layer (root layer)
+        if not network.has_input_layer():
+            raise ValueError(
+                "Network has no input layers. Every network must have at least one root layer. "
+                "Use VectorInput for input layers, or ensure your first layer has no parent connections."
+            )
         
         # Check if network is linear or branching
         is_linear = network.is_linear()
@@ -716,45 +730,76 @@ class NetworkPlotter:
             # X position for this level (apply spacing multiplier)
             x_pos = level_idx * self.config.layer_spacing * self.config.layer_spacing_multiplier
             
-            # Calculate total vertical space needed for this level
-            num_layers_in_level = len(layer_ids)
-            
             # Calculate heights for all layers in this level
-            layer_heights = []
+            layer_heights = {}
             for layer_id in layer_ids:
                 num_neurons_display = layer_display_counts[layer_id]
                 total_height = (num_neurons_display - 1) * self.config.neuron_spacing
-                layer_heights.append(total_height)
+                layer_heights[layer_id] = total_height
             
-            # Calculate total required vertical space with padding between layers
-            vertical_padding = 3.0  # Extra space between layers at the same level
-            total_vertical_space = sum(layer_heights) + (num_layers_in_level - 1) * vertical_padding
+            vertical_padding = self.config.branch_spacing  # Extra space between layers at the same level
             
-            # Start from top and work down
-            current_y_offset = total_vertical_space / 2
-            
-            for sub_idx, layer_id in enumerate(layer_ids):
-                num_neurons_display = layer_display_counts[layer_id]
-                layer_height = layer_heights[sub_idx]
+            if level_idx == 0:
+                # First level: stack all layers centered around y=0
+                total_height_all = sum(layer_heights.values()) + (len(layer_ids) - 1) * vertical_padding
+                current_y = total_height_all / 2
                 
-                # Center of this layer
-                vertical_offset = current_y_offset - layer_height / 2
+                for layer_id in layer_ids:
+                    layer_height = layer_heights[layer_id]
+                    num_neurons_display = layer_display_counts[layer_id]
+                    vertical_offset = current_y - layer_height / 2
+                    
+                    y_start = vertical_offset - layer_height / 2
+                    positions = []
+                    for j in range(num_neurons_display):
+                        y_pos = y_start + j * self.config.neuron_spacing
+                        positions.append((x_pos, y_pos))
+                    
+                    self.neuron_positions[layer_id] = positions
+                    self.layer_positions[layer_id] = (x_pos, vertical_offset)
+                    current_y -= (layer_height + vertical_padding)
+            else:
+                # Group layers by their parent set (layers with same parents should be distributed together)
+                from collections import defaultdict
+                parent_groups = defaultdict(list)
+                for layer_id in layer_ids:
+                    parents = tuple(sorted(network.get_parents(layer_id)))
+                    parent_groups[parents].append(layer_id)
                 
-                # Calculate Y positions for neurons
-                y_start = vertical_offset - layer_height / 2
-                
-                positions = []
-                for j in range(num_neurons_display):
-                    y_pos = y_start + j * self.config.neuron_spacing
-                    positions.append((x_pos, y_pos))
-                
-                self.neuron_positions[layer_id] = positions
-                
-                # Store layer center position
-                self.layer_positions[layer_id] = (x_pos, vertical_offset)
-                
-                # Move down for next layer
-                current_y_offset -= (layer_height + vertical_padding)
+                # For each group of layers sharing the same parents, distribute them around the parent center
+                for parents, group_layer_ids in parent_groups.items():
+                    # Calculate the center of these parents
+                    parent_y_positions = []
+                    for parent_id in parents:
+                        if parent_id in self.layer_positions:
+                            parent_y_positions.append(self.layer_positions[parent_id][1])
+                    
+                    if parent_y_positions:
+                        group_center = (max(parent_y_positions) + min(parent_y_positions)) / 2
+                    else:
+                        group_center = 0.0
+                    
+                    # Calculate total height for this group
+                    group_heights = [layer_heights[lid] for lid in group_layer_ids]
+                    total_group_height = sum(group_heights) + (len(group_layer_ids) - 1) * vertical_padding
+                    
+                    # Distribute layers in this group, centered on group_center
+                    current_y = group_center + total_group_height / 2
+                    
+                    for layer_id in group_layer_ids:
+                        layer_height = layer_heights[layer_id]
+                        num_neurons_display = layer_display_counts[layer_id]
+                        vertical_offset = current_y - layer_height / 2
+                        
+                        y_start = vertical_offset - layer_height / 2
+                        positions = []
+                        for j in range(num_neurons_display):
+                            y_pos = y_start + j * self.config.neuron_spacing
+                            positions.append((x_pos, y_pos))
+                        
+                        self.neuron_positions[layer_id] = positions
+                        self.layer_positions[layer_id] = (x_pos, vertical_offset)
+                        current_y -= (layer_height + vertical_padding)
     
     def _compute_layer_levels(self, network: NeuralNetwork) -> List[List[str]]:
         """
@@ -1405,7 +1450,7 @@ class NetworkPlotter:
                 label_y = min_y - self.config.layer_names_bottom_offset
             else:
                 # Position below each individual layer
-                label_y = y - (len(self.neuron_positions[layer_id]) * self.config.neuron_spacing / 2) - 1.5
+                label_y = y - (len(self.neuron_positions[layer_id]) * self.config.neuron_spacing / 2) - self.config.layer_names_offset
             
             # Configure bbox based on show_box setting
             bbox_props = dict(boxstyle='round,pad=0.5', facecolor='wheat', alpha=0.5) if self.config.layer_names_show_box else None

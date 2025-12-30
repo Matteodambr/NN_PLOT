@@ -7,12 +7,12 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer
+from NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer, VectorInput
 from NN_PLOTTING_UTILITIES import plot_network, PlotConfig
 
 # Create a simple network
 nn = NeuralNetwork("Numbering Demo")
-nn.add_layer(FullyConnectedLayer(6, name="Input"))
+nn.add_layer(VectorInput(num_features=6, name="Input"))
 nn.add_layer(FullyConnectedLayer(4, activation="relu", name="Hidden"))
 nn.add_layer(FullyConnectedLayer(3, activation="softmax", name="Output"))
 

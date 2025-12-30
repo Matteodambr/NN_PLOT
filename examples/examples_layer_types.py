@@ -8,6 +8,7 @@ Currently supports: FullyConnectedLayer (Dense layers)
 from NN_DEFINITION_UTILITIES import (
     NeuralNetwork,
     FullyConnectedLayer,
+    VectorInput,
     NetworkType,
     LayerType
 )
@@ -28,8 +29,8 @@ def example_1_simple_classifier():
     
     # Add fully connected layers sequentially
     # Input layer (784 features for 28x28 images)
-    nn.add_layer(FullyConnectedLayer(
-        num_neurons=784,
+    nn.add_layer(VectorInput(
+        num_features=784,
         name="Input"
     ))
     
@@ -71,7 +72,7 @@ def example_2_deep_network():
     )
     
     # Input
-    nn.add_layer(FullyConnectedLayer(num_neurons=512, name="Input"))
+    nn.add_layer(VectorInput(num_features=512, name="Input"))
     
     # Deep hidden layers with decreasing size
     for i, size in enumerate([256, 128, 64, 32, 16], 1):
@@ -241,7 +242,7 @@ def example_5_custom_architectures():
     )
     
     # Encoder (compressing)
-    nn.add_layer(FullyConnectedLayer(num_neurons=784, name="Input"))
+    nn.add_layer(VectorInput(num_features=784, name="Input"))
     nn.add_layer(FullyConnectedLayer(num_neurons=512, activation="relu", name="Encoder 1"))
     nn.add_layer(FullyConnectedLayer(num_neurons=256, activation="relu", name="Encoder 2"))
     nn.add_layer(FullyConnectedLayer(num_neurons=128, activation="relu", name="Encoder 3"))

@@ -4,12 +4,12 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from src.NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer
+from src.NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer, VectorInput
 from src.NN_PLOTTING_UTILITIES import plot_network, PlotConfig, LayerGroup
 
 nn = NeuralNetwork("Debug Test")
 
-l1_id = nn.add_layer(FullyConnectedLayer(5, name="Layer_1"))
+l1_id = nn.add_layer(VectorInput(num_features=5, name="Layer_1"))
 l2_id = nn.add_layer(FullyConnectedLayer(5, activation="relu", name="Layer_2"), parent_ids=[l1_id])
 l3_id = nn.add_layer(FullyConnectedLayer(5, activation="relu", name="Layer_3"), parent_ids=[l2_id])
 l4_id = nn.add_layer(FullyConnectedLayer(5, activation="relu", name="Layer_4"), parent_ids=[l3_id])

@@ -7,7 +7,7 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 import matplotlib.pyplot as plt
-from NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer
+from NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer, VectorInput
 from NN_PLOTTING_UTILITIES import plot_network, PlotConfig
 
 os.makedirs("test_outputs", exist_ok=True)
@@ -15,8 +15,8 @@ os.makedirs("test_outputs", exist_ok=True)
 def create_network():
     """Create a sample network with labels."""
     nn = NeuralNetwork("Sample Network")
-    nn.add_layer(FullyConnectedLayer(
-        num_neurons=3,
+    nn.add_layer(VectorInput(
+        num_features=3,
         name="Input",
         neuron_labels=[r"$x_1$", r"$x_2$", r"$x_3$"],
         label_position="left"
