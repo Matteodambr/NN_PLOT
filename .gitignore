@@ -5,5 +5,5 @@
 *.pdf
 __pycache__
 
-# Exception: track the static README showcase image
-!src/readme_image_static/showcase.png
+# Exception: track all static README images
+!src/readme_image_static/*.png
