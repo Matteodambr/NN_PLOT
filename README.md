@@ -154,7 +154,7 @@ fig = plot_network(
 ```
 
     
-![png](readme_images/README_7_0.png)
+![png](src/readme_image_static/README_7_0.png)
     
 
 ---
@@ -199,7 +199,7 @@ fig = plot_network(
 ```
 
     
-![png](readme_images/README_9_0.png)
+![png](src/readme_image_static/README_9_0.png)
     
 
 ---
@@ -267,7 +267,7 @@ fig = plot_network(multi_in_multi_out_nn, title="Styled Multi-Input Multi-Output
 ```
 
     
-![png](readme_images/README_11_0.png)
+![png](src/readme_image_static/README_11_0.png)
     
 
 ---
@@ -351,15 +351,15 @@ plt.show()
 ```
 
     
-![png](readme_images/README_13_0.png)
+![png](src/readme_image_static/README_13_0.png)
     
 
     
-![png](readme_images/README_13_1.png)
+![png](src/readme_image_static/README_13_1.png)
     
 
     
-![png](readme_images/README_13_2.png)
+![png](src/readme_image_static/README_13_2.png)
     
 
 ---
@@ -604,7 +604,7 @@ fig = plot_network(
 ```
 
     
-![png](readme_images/README_17_0.png)
+![png](src/readme_image_static/README_17_0.png)
     
 
 ---
@@ -673,7 +673,7 @@ fig = plot_network(large_mlp, title="Large MLP with Neuron Collapsing and Number
 ```
 
     
-![png](readme_images/README_19_0.png)
+![png](src/readme_image_static/README_19_0.png)
     
 
 ---
@@ -753,7 +753,7 @@ print("✓ Saved: showcase_outputs/autoencoder_labeling.png")
 ```
 
     
-![png](readme_images/README_25_1.png)
+![png](src/readme_image_static/README_25_1.png)
     
 
 ---
