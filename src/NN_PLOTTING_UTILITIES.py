@@ -1008,17 +1008,29 @@ class NetworkPlotter:
         # Determine rectangle dimensions based on image aspect ratio
         aspect_ratio = layer.width / layer.height
         
-        # Base size for the rectangle (will be scaled by aspect ratio)
-        base_size = self.config.neuron_spacing * 2.0  # Make it reasonably sized
-        
-        if aspect_ratio > 1:
-            # Wider than tall
-            rect_width = base_size * aspect_ratio
-            rect_height = base_size
+        # Use custom_size if provided, otherwise calculate based on aspect ratio
+        if layer.custom_size is not None:
+            # Use the custom size directly
+            if aspect_ratio > 1:
+                # Wider than tall
+                rect_width = layer.custom_size * aspect_ratio
+                rect_height = layer.custom_size
+            else:
+                # Taller than wide
+                rect_width = layer.custom_size
+                rect_height = layer.custom_size / aspect_ratio
         else:
-            # Taller than wide
-            rect_width = base_size
-            rect_height = base_size / aspect_ratio
+            # Base size for the rectangle (will be scaled by aspect ratio)
+            base_size = self.config.neuron_spacing * 2.0  # Make it reasonably sized
+            
+            if aspect_ratio > 1:
+                # Wider than tall
+                rect_width = base_size * aspect_ratio
+                rect_height = base_size
+            else:
+                # Taller than wide
+                rect_width = base_size
+                rect_height = base_size / aspect_ratio
         
         # Store bounds for axis limit calculation
         # Account for RGB channel separation offset if applicable
@@ -1089,14 +1101,34 @@ class NetworkPlotter:
             text = f"{layer.height}×{layer.width}×{layer.channels}"
             fontsize = 10
         
-        # Draw text
-        ax.text(
+        # Calculate text bounds to ensure it fits
+        # Create temporary text to measure size
+        temp_text = ax.text(
             center_x, center_y, text,
             ha='center', va='center',
             fontsize=fontsize,
             fontname=self.config.font_family,
             zorder=11
         )
+        
+        # Get text bounding box in data coordinates
+        renderer = ax.figure.canvas.get_renderer()
+        bbox = temp_text.get_window_extent(renderer=renderer)
+        bbox_data = bbox.transformed(ax.transData.inverted())
+        text_width = bbox_data.width
+        text_height = bbox_data.height
+        
+        # Calculate required padding (10% margin on each side)
+        required_width = text_width * 1.2
+        required_height = text_height * 1.2
+        
+        # If text doesn't fit, scale down the font size
+        if required_width > width or required_height > height:
+            scale_factor = min(width / required_width, height / required_height)
+            fontsize = fontsize * scale_factor
+            temp_text.set_fontsize(fontsize)
+        
+        # Text is already drawn with temp_text, no need to draw again
     
     def _draw_single_image_rectangle(self, ax: plt.Axes, layer: ImageInput,
                                      center_x: float, center_y: float,
@@ -1848,6 +1880,10 @@ class NetworkPlotter:
             if show_type:
                 if isinstance(layer, FullyConnectedLayer):
                     label_parts.append("FC layer")
+                elif isinstance(layer, ImageInput):
+                    # For ImageInput, show "Image Input" with color mode indicator
+                    color_indicator = f"({layer.color_mode.upper()})" if layer.color_mode else ""
+                    label_parts.append(f"Image Input {color_indicator}".strip())
                 else:
                     # For other layer types, use a generic label or class name
                     idx = network._layer_order.index(layer_id)
@@ -1857,6 +1893,10 @@ class NetworkPlotter:
             if show_dim:
                 if isinstance(layer, FullyConnectedLayer):
                     dim_text = f"Dim.: {layer.num_neurons}"
+                    label_parts.append(dim_text)
+                elif isinstance(layer, ImageInput):
+                    # For ImageInput, show dimensions as "width x height"
+                    dim_text = f"{layer.width} x {layer.height}"
                     label_parts.append(dim_text)
                 else:
                     label_parts.append(f"Dim.: {layer.get_output_size()}")

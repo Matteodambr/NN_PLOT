@@ -309,6 +309,9 @@ class ImageInput(InputLayer):
         custom_text (Optional[str]): Text to display when display_mode='text'. If None, 
                                      shows dimension info. Supports LaTeX.
         custom_text_size (float): Font size for custom text. Default: 12.
+        custom_size (Optional[float]): Custom size for the rectangle. If provided, overrides
+                                      the automatic aspect ratio-based sizing. Useful for
+                                      controlling the visual size of the input layer.
         
         # Image options (when display_mode is 'image')
         image_path (Optional[str]): Path or URL to the image file.
@@ -373,6 +376,7 @@ class ImageInput(InputLayer):
     display_mode: str = "text"
     custom_text: Optional[str] = None
     custom_text_size: float = 12
+    custom_size: Optional[float] = None  # Custom size for the rectangle (overrides aspect ratio scaling)
     
     # Image options
     image_path: Optional[str] = None

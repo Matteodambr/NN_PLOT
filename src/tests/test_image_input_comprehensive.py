@@ -52,11 +52,11 @@ def test_text_mode_with_color():
     )
     network.add_layer(img_input, is_input=True)
     
-    # Add subsequent layers
-    conv1 = FullyConnectedLayer(num_neurons=64, activation="ReLU", name="Conv1")
+    # Add subsequent layers with fewer neurons
+    conv1 = FullyConnectedLayer(num_neurons=16, activation="ReLU", name="Conv1")
     network.add_layer(conv1, parent_ids=[img_input.layer_id])
     
-    pool1 = FullyConnectedLayer(num_neurons=32, activation="", name="Pool1")
+    pool1 = FullyConnectedLayer(num_neurons=8, activation="", name="Pool1")
     network.add_layer(pool1, parent_ids=[conv1.layer_id])
     
     output = FullyConnectedLayer(num_neurons=10, activation="Softmax", name="Output")
@@ -101,7 +101,7 @@ def test_bw_mode(cat_image_path):
     network.add_layer(img_input, is_input=True)
     
     # Add subsequent layers
-    conv1 = FullyConnectedLayer(num_neurons=64, activation="ReLU", name="Conv1")
+    conv1 = FullyConnectedLayer(num_neurons=16, activation="ReLU", name="Conv1")
     network.add_layer(conv1, parent_ids=[img_input.layer_id])
     
     output = FullyConnectedLayer(num_neurons=10, activation="Softmax", name="Output")
@@ -147,7 +147,7 @@ def test_rgb_single_mode(cat_image_path):
     network.add_layer(img_input, is_input=True)
     
     # Add subsequent layers
-    conv1 = FullyConnectedLayer(num_neurons=64, activation="ReLU", name="Conv1")
+    conv1 = FullyConnectedLayer(num_neurons=16, activation="ReLU", name="Conv1")
     network.add_layer(conv1, parent_ids=[img_input.layer_id])
     
     output = FullyConnectedLayer(num_neurons=10, activation="Softmax", name="Output")
@@ -193,7 +193,7 @@ def test_rgb_separated_mode(cat_image_path):
     network.add_layer(img_input, is_input=True)
     
     # Add subsequent layers
-    conv1 = FullyConnectedLayer(num_neurons=64, activation="ReLU", name="Conv1")
+    conv1 = FullyConnectedLayer(num_neurons=16, activation="ReLU", name="Conv1")
     network.add_layer(conv1, parent_ids=[img_input.layer_id])
     
     output = FullyConnectedLayer(num_neurons=10, activation="Softmax", name="Output")
