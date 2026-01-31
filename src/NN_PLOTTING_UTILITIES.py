@@ -809,9 +809,33 @@ class NetworkPlotter:
             # Calculate heights for all layers in this level
             layer_heights = {}
             for layer_id in layer_ids:
-                num_neurons_display = layer_display_counts[layer_id]
-                total_height = (num_neurons_display - 1) * self.config.neuron_spacing
-                layer_heights[layer_id] = total_height
+                layer = network.get_layer(layer_id)
+                
+                # Special handling for ImageInput layers - use actual visual height
+                if isinstance(layer, ImageInput):
+                    # Calculate the visual height of the ImageInput rectangle
+                    if layer.custom_size is not None:
+                        size_factor = layer.custom_size
+                    else:
+                        # Default size based on aspect ratio
+                        aspect_ratio = layer.width / layer.height
+                        if aspect_ratio > 1:
+                            size_factor = self.config.neuron_radius * 15
+                        else:
+                            size_factor = self.config.neuron_radius * 15 / aspect_ratio
+                    
+                    # For RGB separated channels, account for offset
+                    if layer.display_mode == "image" and layer.color_mode == "rgb" and layer.separate_channels:
+                        offset = size_factor * 0.15
+                        total_height = size_factor + 2 * offset
+                    else:
+                        total_height = size_factor
+                    
+                    layer_heights[layer_id] = total_height
+                else:
+                    num_neurons_display = layer_display_counts[layer_id]
+                    total_height = (num_neurons_display - 1) * self.config.neuron_spacing
+                    layer_heights[layer_id] = total_height
             
             vertical_padding = self.config.branch_spacing  # Extra space between layers at the same level
             
