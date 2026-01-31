@@ -2098,10 +2098,10 @@ class NetworkPlotter:
                         min_y = min(min_y, layer_bottom)
                 label_y = min_y - self.config.layer_names_bottom_offset
             else:
-                # Position below each individual layer
+                # Position below each individual layer with dynamic offset based on layer size
                 base_offset = self.config.layer_names_offset
                 
-                # For ImageInput layers, add extra offset based on rectangle size
+                # For ImageInput layers, calculate offset from rectangle bounds
                 if isinstance(layer, ImageInput):
                     # Get the ImageInput bounds to calculate proper offset
                     if layer_id in self.image_input_bounds:
@@ -2112,9 +2112,34 @@ class NetworkPlotter:
                     else:
                         # Fallback to regular calculation with extra offset
                         label_y = y - base_offset * 2
+                
+                # For GenericOutput layers, calculate offset from box bounds
+                elif isinstance(layer, GenericOutput):
+                    # Get the GenericOutput bounds to calculate proper offset
+                    if layer_id in self.generic_output_bounds:
+                        bounds = self.generic_output_bounds[layer_id]
+                        _, _, bottom_y, _ = bounds
+                        # Position label below the box with extra spacing
+                        label_y = bottom_y - base_offset
+                    else:
+                        # Fallback if no bounds stored
+                        label_y = y - base_offset
+                
                 else:
-                    # Regular layers - use neuron positions
-                    label_y = y - (len(self.neuron_positions[layer_id]) * self.config.neuron_spacing / 2) - base_offset
+                    # Regular layers - calculate offset dynamically based on layer height
+                    if layer_id in self.neuron_positions and self.neuron_positions[layer_id]:
+                        # Calculate the actual vertical extent of the layer
+                        layer_positions = self.neuron_positions[layer_id]
+                        min_y = min(pos[1] for pos in layer_positions)
+                        max_y = max(pos[1] for pos in layer_positions)
+                        layer_height = max_y - min_y
+                        
+                        # Position label below the bottom neuron with spacing proportional to layer size
+                        # Use neuron radius for additional spacing
+                        label_y = min_y - self.config.neuron_radius - base_offset
+                    else:
+                        # Fallback if no positions found
+                        label_y = y - base_offset
             
             # Configure bbox based on show_box setting
             bbox_props = dict(boxstyle='round,pad=0.5', facecolor='wheat', alpha=0.5) if self.config.layer_names_show_box else None
