@@ -327,6 +327,7 @@ class NetworkPlotter:
         self.neuron_positions: Dict[str, List[Tuple[float, float]]] = {}
         self.collapsed_layers: Dict[str, bool] = {}  # Track which layers are collapsed
         self.collapsed_info: Dict[str, Dict] = {}  # Store info about collapsed neurons
+        self.generic_output_boxes: Dict[str, Tuple[float, float]] = {}  # Store GenericOutput box dimensions (width, height)
     
     def _get_layer_style(self, layer_id: str, layer_name: Optional[str]) -> LayerStyle:
         """
@@ -1111,6 +1112,28 @@ class NetworkPlotter:
                                 fontname=self.config.font_family,
                                 zorder=11)
     
+    def _get_generic_output_box_dimensions(self, ax: plt.Axes, layer: GenericOutput) -> Tuple[float, float]:
+        """
+        Calculate the dimensions needed for a GenericOutput box based on text size.
+        
+        Args:
+            ax: The matplotlib axes to use for text measurement
+            layer: The GenericOutput layer
+            
+        Returns:
+            Tuple of (width, height) for the box
+        """
+        # Measure text dimensions to size the box appropriately
+        fontsize = self.config.neuron_text_label_fontsize
+        text_width, text_height = self._get_text_dimensions(ax, layer.text, fontsize)
+        
+        # Add padding around the text (minimum padding)
+        padding = 0.3
+        box_width = max(text_width + 2 * padding, 1.5)  # Minimum width of 1.5
+        box_height = max(text_height + 2 * padding, 0.8)  # Minimum height of 0.8
+        
+        return box_width, box_height
+    
     def _draw_generic_output(self, ax: plt.Axes, layer: GenericOutput, layer_id: str, position: Tuple[float, float]) -> None:
         """Draw a GenericOutput layer as a rounded box with text inside."""
         x, y = position
@@ -1118,9 +1141,8 @@ class NetworkPlotter:
         # Get layer-specific style or use defaults
         layer_style = self._get_layer_style(layer_id, layer.name)
         
-        # Box dimensions
-        box_width = 2.0  # Default width
-        box_height = 1.0  # Default height
+        # Calculate box dimensions based on text size
+        box_width, box_height = self._get_generic_output_box_dimensions(ax, layer)
         
         # Colors
         fill_color = layer_style.neuron_fill_color or 'lightcoral'
@@ -1380,9 +1402,8 @@ class NetworkPlotter:
             # For GenericOutput, account for the box dimensions
             if isinstance(layer, GenericOutput):
                 for x, y in positions:
-                    # Box dimensions (must match _draw_generic_output)
-                    box_width = 2.0
-                    box_height = 1.0
+                    # Calculate box dimensions dynamically based on text
+                    box_width, box_height = self._get_generic_output_box_dimensions(ax, layer)
                     all_x.extend([x - box_width/2, x + box_width/2])
                     all_y.extend([y - box_height/2, y + box_height/2])
             else:
