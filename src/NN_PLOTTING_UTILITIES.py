@@ -919,8 +919,8 @@ class NetworkPlotter:
                         self.layer_positions[layer_id] = (x_pos, vertical_offset)
                         current_y -= (layer_height + vertical_padding)
         
-        # After all levels are positioned, apply global centering to ensure
-        # the entire network (from top to bottom) is centered at y=0
+        # After all levels are positioned, apply global centering to center
+        # the entire network (all layers) at y=0
         all_tops = []
         all_bottoms = []
         
@@ -928,19 +928,20 @@ class NetworkPlotter:
             layer = network.get_layer(layer_id)
             
             if isinstance(layer, ImageInput):
-                # Use visual rectangle bounds
+                # Use visual rectangle bounds for ImageInput
                 layer_height = layer_heights.get(layer_id, 0)
                 if layer_id in self.layer_positions:
                     center_y = self.layer_positions[layer_id][1]
                     all_tops.append(center_y + layer_height / 2)
                     all_bottoms.append(center_y - layer_height / 2)
             else:
-                # Use neuron positions
+                # Use neuron positions for other layers
                 if layer_id in self.neuron_positions and self.neuron_positions[layer_id]:
                     y_positions = [pos[1] for pos in self.neuron_positions[layer_id]]
                     all_tops.append(max(y_positions))
                     all_bottoms.append(min(y_positions))
         
+        # Calculate offset to center entire network at y=0
         if all_tops and all_bottoms:
             global_top = max(all_tops)
             global_bottom = min(all_bottoms)
