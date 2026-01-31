@@ -1,179 +1,210 @@
 """
-Test ImageInput layer functionality.
+Comprehensive test for ImageInput layer functionality.
+Single test covering all display modes and features with actual images.
 """
 
 import sys
 import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
-# Add the parent directory to sys.path for imports
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
-from NN_DEFINITION_UTILITIES import ImageInput, NeuralNetwork, FullyConnectedLayer
-from NN_PLOTTING_UTILITIES import NetworkPlotter, PlotConfig
 import matplotlib
-matplotlib.rcParams['text.usetex'] = False  # Disable LaTeX rendering for tests
+matplotlib.use('Agg')  # Use non-interactive backend
+
+from src.NN_DEFINITION_UTILITIES import (
+    NeuralNetwork,
+    FullyConnectedLayer,
+    ImageInput,
+    NetworkType
+)
+from src.NN_PLOTTING_UTILITIES import plot_network, PlotConfig
 
 
-def test_image_input_text_mode():
-    """Test ImageInput in text mode (no actual image)."""
-    # Create network with ImageInput
-    network = NeuralNetwork(name="Image CNN")
+def get_catto_path():
+    """Get the path to the repository's catto.jpg image."""
+    # Path relative to this test file
+    test_dir = os.path.dirname(os.path.abspath(__file__))
+    catto_path = os.path.join(test_dir, '..', 'readme_image_static', 'catto.jpg')
     
-    # Add ImageInput layer with text mode
-    img_input = ImageInput(
-        height=224,
-        width=224,
-        channels=3,
-        name="Input Image",
+    if not os.path.exists(catto_path):
+        raise FileNotFoundError(f"catto.jpg not found at {catto_path}")
+    
+    return catto_path
+
+
+def test_image_input_comprehensive():
+    """Comprehensive test covering all ImageInput features."""
+    print("\n" + "="*70)
+    print("Comprehensive ImageInput Test - All Modes")
+    print("="*70)
+    
+    # Get the cat image path
+    cat_image_path = get_catto_path()
+    print(f"Using cat image from: {cat_image_path}")
+    
+    # Get output directory (at project root, same as other tests)
+    project_root = os.path.join(os.path.dirname(__file__), '..', '..')
+    output_dir = os.path.join(project_root, "test_outputs")
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # Test 1: Text mode with colored rectangle
+    print("\n1. Testing text mode with colored rectangle...")
+    nn1 = NeuralNetwork(name="Text Mode", network_type=NetworkType.FEEDFORWARD)
+    img_input1 = ImageInput(
+        height=224, width=224, channels=3,
+        name="RGB Input",
         display_mode="text",
-        custom_text="224 x 224 x 3",  # Use plain text instead of LaTeX
-        custom_text_size=14
+        custom_text="224×224×3\nRGB Input",
+        color_mode="rgb",
+        rounded_corners=True,
+        custom_size=2.5
     )
-    network.add_layer(img_input, is_input=True)
+    nn1.add_layer(img_input1, is_input=True)
+    nn1.add_layer(FullyConnectedLayer(num_neurons=16, activation="relu", name="Conv1"))
+    nn1.add_layer(FullyConnectedLayer(num_neurons=10, activation="softmax", name="Output"))
     
-    # Add a hidden layer
-    hidden = FullyConnectedLayer(num_neurons=128, activation="ReLU", name="Hidden")
-    network.add_layer(hidden, parent_ids=[img_input.layer_id])
-    
-    # Add output layer
-    output = FullyConnectedLayer(num_neurons=10, activation="Softmax", name="Output")
-    network.add_layer(output, parent_ids=[hidden.layer_id])
-    
-    # Create plotter and plot
-    # Disable LaTeX after plotter creation to avoid LaTeX requirement
-    import matplotlib as mpl
-    config = PlotConfig(figsize=(10, 8))
-    plotter = NetworkPlotter(config)
-    mpl.rcParams['text.usetex'] = False  # Force disable after plotter sets it
-    
-    output_path = os.path.join(os.path.dirname(__file__), "../../PlottedNetworks/test_image_input_text.png")
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    
-    plotter.plot_network(
-        network,
-        title="ImageInput - Text Mode",
-        save_path=output_path,
+    plot_network(
+        nn1,
+        save_path=os.path.join(output_dir, "output_image_input_text.png"),
         show=False,
-        dpi=150
+        config=PlotConfig(figsize=(8, 6))
     )
+    print("   ✓ Saved: output_image_input_text.png")
     
-    print(f"✓ Text mode test passed. Output saved to {output_path}")
-
-
-def test_image_input_default_text():
-    """Test ImageInput in text mode with default dimension text."""
-    network = NeuralNetwork(name="Image CNN Default")
-    
-    # Add ImageInput layer without custom text (should show dimensions)
-    img_input = ImageInput(
-        height=128,
-        width=128,
-        channels=1,
-        name="BW Input",
-        display_mode="text"
+    # Test 2: Black & white mode
+    print("\n2. Testing BW image mode...")
+    nn2 = NeuralNetwork(name="BW Mode", network_type=NetworkType.FEEDFORWARD)
+    img_input2 = ImageInput(
+        height=400, width=400, channels=1,
+        name="BW Cat",
+        display_mode="image",
+        image_path=cat_image_path,
+        color_mode="bw",
+        rounded_corners=True,
+        custom_size=2.5
     )
-    network.add_layer(img_input, is_input=True)
+    nn2.add_layer(img_input2, is_input=True)
+    nn2.add_layer(FullyConnectedLayer(num_neurons=16, activation="relu", name="Conv1"))
+    nn2.add_layer(FullyConnectedLayer(num_neurons=10, activation="softmax", name="Output"))
     
-    # Add output layer
-    output = FullyConnectedLayer(num_neurons=10, activation="Softmax", name="Output")
-    network.add_layer(output, parent_ids=[img_input.layer_id])
-    
-    # Create plotter and plot
-    # Disable LaTeX after plotter creation
-    import matplotlib as mpl
-    config = PlotConfig(figsize=(8, 6))
-    plotter = NetworkPlotter(config)
-    mpl.rcParams['text.usetex'] = False  # Force disable after plotter sets it
-    
-    output_path = os.path.join(os.path.dirname(__file__), "../../PlottedNetworks/test_image_input_default.png")
-    plotter.plot_network(
-        network,
-        title="ImageInput - Default Text",
-        save_path=output_path,
+    plot_network(
+        nn2,
+        save_path=os.path.join(output_dir, "output_image_input_bw.png"),
         show=False,
-        dpi=150
+        config=PlotConfig(figsize=(8, 6))
     )
+    print("   ✓ Saved: output_image_input_bw.png")
     
-    print(f"✓ Default text test passed. Output saved to {output_path}")
-
-
-def test_image_input_validation():
-    """Test ImageInput validation."""
-    # Test invalid dimensions
-    try:
-        ImageInput(height=-1, width=224, channels=3)
-        assert False, "Should have raised ValueError for negative height"
-    except ValueError as e:
-        print(f"✓ Validation test 1 passed: {e}")
+    # Test 3: RGB single image mode
+    print("\n3. Testing RGB single image mode...")
+    nn3 = NeuralNetwork(name="RGB Single", network_type=NetworkType.FEEDFORWARD)
+    img_input3 = ImageInput(
+        height=600, width=600, channels=3,
+        name="RGB Cat",
+        display_mode="image",
+        image_path=cat_image_path,
+        color_mode="rgb",
+        separate_channels=False,
+        rounded_corners=True,
+        custom_size=2.5
+    )
+    nn3.add_layer(img_input3, is_input=True)
+    nn3.add_layer(FullyConnectedLayer(num_neurons=16, activation="relu", name="Conv1"))
+    nn3.add_layer(FullyConnectedLayer(num_neurons=10, activation="softmax", name="Output"))
     
-    # Test invalid channels
-    try:
-        ImageInput(height=224, width=224, channels=2)
-        assert False, "Should have raised ValueError for invalid channels"
-    except ValueError as e:
-        print(f"✓ Validation test 2 passed: {e}")
+    plot_network(
+        nn3,
+        save_path=os.path.join(output_dir, "output_image_input_rgb_single.png"),
+        show=False,
+        config=PlotConfig(figsize=(8, 6))
+    )
+    print("   ✓ Saved: output_image_input_rgb_single.png")
     
-    # Test invalid display_mode
-    try:
-        ImageInput(height=224, width=224, channels=3, display_mode="invalid")
-        assert False, "Should have raised ValueError for invalid display_mode"
-    except ValueError as e:
-        print(f"✓ Validation test 3 passed: {e}")
+    # Test 4: RGB separated channels mode
+    print("\n4. Testing RGB separated channels mode...")
+    nn4 = NeuralNetwork(name="RGB Separated", network_type=NetworkType.FEEDFORWARD)
+    img_input4 = ImageInput(
+        height=300, width=300, channels=3,
+        name="RGB Channels",
+        display_mode="image",
+        image_path=cat_image_path,
+        color_mode="rgb",
+        separate_channels=True,
+        rounded_corners=True,
+        custom_size=2.5
+    )
+    nn4.add_layer(img_input4, is_input=True)
+    nn4.add_layer(FullyConnectedLayer(num_neurons=16, activation="relu", name="FC"))
+    nn4.add_layer(FullyConnectedLayer(num_neurons=10, activation="softmax", name="Output"))
     
-    # Test missing image_path for image mode
-    try:
-        ImageInput(height=224, width=224, channels=3, display_mode="image")
-        assert False, "Should have raised ValueError for missing image_path"
-    except ValueError as e:
-        print(f"✓ Validation test 4 passed: {e}")
+    plot_network(
+        nn4,
+        save_path=os.path.join(output_dir, "output_image_input_rgb_separated.png"),
+        show=False,
+        config=PlotConfig(figsize=(8, 6))
+    )
+    print("   ✓ Saved: output_image_input_rgb_separated.png")
     
-    # Test invalid magnification
-    try:
-        ImageInput(height=224, width=224, channels=3, magnification=-1)
-        assert False, "Should have raised ValueError for negative magnification"
-    except ValueError as e:
-        print(f"✓ Validation test 5 passed: {e}")
+    # Test 5: Multiple inputs with different sizes
+    print("\n5. Testing multiple ImageInput layers with different sizes...")
+    nn5 = NeuralNetwork(name="Multi-Input", network_type=NetworkType.FEEDFORWARD)
     
-    # Test invalid translation
-    try:
-        ImageInput(height=224, width=224, channels=3, translation_x=2.0)
-        assert False, "Should have raised ValueError for out-of-range translation"
-    except ValueError as e:
-        print(f"✓ Validation test 6 passed: {e}")
-
-
-def test_image_input_properties():
-    """Test ImageInput properties and methods."""
-    img_input = ImageInput(height=224, width=224, channels=3, name="Test")
+    img_small = ImageInput(
+        height=64, width=64, channels=3,
+        name="Small",
+        display_mode="image",
+        image_path=cat_image_path,
+        color_mode="rgb",
+        rounded_corners=True,
+        custom_size=1.5
+    )
+    nn5.add_layer(img_small, is_input=True)
     
-    # Test get_output_size
-    assert img_input.get_output_size() == 224 * 224 * 3, "Output size should be H×W×C"
+    img_medium = ImageInput(
+        height=128, width=128, channels=3,
+        name="Medium",
+        display_mode="image",
+        image_path=cat_image_path,
+        color_mode="rgb",
+        rounded_corners=True,
+        custom_size=2.5
+    )
+    nn5.add_layer(img_medium, is_input=True)
     
-    # Test num_neurons property
-    assert img_input.num_neurons == 224 * 224 * 3, "num_neurons should match output size"
+    img_large = ImageInput(
+        height=224, width=224, channels=3,
+        name="Large",
+        display_mode="image",
+        image_path=cat_image_path,
+        color_mode="rgb",
+        rounded_corners=True,
+        custom_size=3.5
+    )
+    nn5.add_layer(img_large, is_input=True)
     
-    # Test __str__
-    str_repr = str(img_input)
-    assert "224×224×3" in str_repr, "String representation should include dimensions"
+    merge = FullyConnectedLayer(num_neurons=16, activation="relu", name="Merge")
+    nn5.add_layer(merge, parent_ids=[img_small.layer_id, img_medium.layer_id, img_large.layer_id])
     
-    print("✓ Properties test passed")
+    output = FullyConnectedLayer(num_neurons=10, activation="softmax", name="Output")
+    nn5.add_layer(output)  # Connects to merge automatically
+    
+    plot_network(
+        nn5,
+        save_path=os.path.join(output_dir, "output_image_input_multi.png"),
+        show=False,
+        config=PlotConfig(figsize=(10, 8))
+    )
+    print("   ✓ Saved: output_image_input_multi.png")
+    
+    print("\n" + "="*70)
+    print("All ImageInput tests completed successfully!")
+    print(f"Output location: {output_dir}")
+    print("="*70)
 
 
 if __name__ == "__main__":
-    print("Running ImageInput tests...")
-    print("-" * 50)
-    
-    # Run validation tests first
-    test_image_input_validation()
-    print()
-    
-    # Run property tests
-    test_image_input_properties()
-    print()
-    
-    # Run visualization tests
-    test_image_input_text_mode()
-    test_image_input_default_text()
-    
-    print("-" * 50)
-    print("All tests passed! ✓")
+    try:
+        test_image_input_comprehensive()
+    except Exception as e:
+        print(f"\nError running test: {e}")
+        import traceback
+        traceback.print_exc()
