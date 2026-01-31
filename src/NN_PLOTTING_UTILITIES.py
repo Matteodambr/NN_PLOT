@@ -919,46 +919,30 @@ class NetworkPlotter:
                         self.layer_positions[layer_id] = (x_pos, vertical_offset)
                         current_y -= (layer_height + vertical_padding)
         
-        # After all levels are positioned, apply global centering to center
-        # the entire network (all layers) at y=0
-        all_tops = []
-        all_bottoms = []
-        
-        for layer_id in network.layers.keys():
-            layer = network.get_layer(layer_id)
-            
-            if isinstance(layer, ImageInput):
-                # Use visual rectangle bounds for ImageInput
-                layer_height = layer_heights.get(layer_id, 0)
+        # Simplified centering: For level 0, center based on layer center positions
+        # (not visual bounds), treating ImageInput like any other layer
+        if levels and levels[0]:
+            level_0_centers = []
+            for layer_id in levels[0]:
                 if layer_id in self.layer_positions:
-                    center_y = self.layer_positions[layer_id][1]
-                    all_tops.append(center_y + layer_height / 2)
-                    all_bottoms.append(center_y - layer_height / 2)
-            else:
-                # Use neuron positions for other layers
-                if layer_id in self.neuron_positions and self.neuron_positions[layer_id]:
-                    y_positions = [pos[1] for pos in self.neuron_positions[layer_id]]
-                    all_tops.append(max(y_positions))
-                    all_bottoms.append(min(y_positions))
-        
-        # Calculate offset to center entire network at y=0
-        if all_tops and all_bottoms:
-            global_top = max(all_tops)
-            global_bottom = min(all_bottoms)
-            global_center = (global_top + global_bottom) / 2
-            global_offset = -global_center
+                    level_0_centers.append(self.layer_positions[layer_id][1])
             
-            # Apply global offset to ALL layers
-            for layer_id in network.layers.keys():
-                if layer_id in self.neuron_positions:
-                    self.neuron_positions[layer_id] = [
-                        (pos[0], pos[1] + global_offset) 
-                        for pos in self.neuron_positions[layer_id]
-                    ]
+            if level_0_centers:
+                # Center the level 0 layers at y=0
+                level_0_center = (max(level_0_centers) + min(level_0_centers)) / 2
+                centering_offset = -level_0_center
                 
-                if layer_id in self.layer_positions:
-                    old_pos = self.layer_positions[layer_id]
-                    self.layer_positions[layer_id] = (old_pos[0], old_pos[1] + global_offset)
+                # Apply offset to ALL layers
+                for layer_id in network.layers.keys():
+                    if layer_id in self.neuron_positions:
+                        self.neuron_positions[layer_id] = [
+                            (pos[0], pos[1] + centering_offset) 
+                            for pos in self.neuron_positions[layer_id]
+                        ]
+                    
+                    if layer_id in self.layer_positions:
+                        old_pos = self.layer_positions[layer_id]
+                        self.layer_positions[layer_id] = (old_pos[0], old_pos[1] + centering_offset)
     
     def _compute_layer_levels(self, network: NeuralNetwork) -> List[List[str]]:
         """
@@ -1222,12 +1206,13 @@ class NetworkPlotter:
             text = f"{layer.height}×{layer.width}×{layer.channels}"
             fontsize = 10
         
-        # Calculate text bounds to ensure it fits
-        # We need to iterate to find the right font size
-        TEXT_PADDING_FACTOR = 1.4  # 20% margin on each side (1 + 0.2 + 0.2)
-        FONT_SCALE_REDUCTION = 0.95  # Apply 5% reduction for comfortable fit
+        # Calculate text bounds to ensure it fits - be aggressive to prevent overflow
+        # Use larger padding and tighter constraints
+        TEXT_PADDING_FACTOR = 1.6  # 30% margin on each side for safety (1 + 0.3 + 0.3)
+        FONT_SCALE_REDUCTION = 0.90  # Apply 10% reduction for comfortable fit
+        MIN_FONT_SIZE = 4  # Minimum readable font size
         
-        max_iterations = 10
+        max_iterations = 20  # More iterations for better fit
         for iteration in range(max_iterations):
             # Create temporary text to measure size
             temp_text = ax.text(
@@ -1248,7 +1233,7 @@ class NetworkPlotter:
             # Remove temporary text
             temp_text.remove()
             
-            # Calculate required padding (20% margin on each side for safety)
+            # Calculate required padding (30% margin on each side for safety)
             required_width = text_width * TEXT_PADDING_FACTOR
             required_height = text_height * TEXT_PADDING_FACTOR
             
@@ -1256,9 +1241,9 @@ class NetworkPlotter:
             if required_width <= width and required_height <= height:
                 break
             
-            # Scale down the font size
+            # Scale down the font size more aggressively
             scale_factor = min(width / required_width, height / required_height) * FONT_SCALE_REDUCTION
-            fontsize = fontsize * scale_factor
+            fontsize = max(MIN_FONT_SIZE, fontsize * scale_factor)  # Don't go below minimum
         
         # Draw the final text with correct size
         ax.text(
