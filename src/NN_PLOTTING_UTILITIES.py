@@ -801,13 +801,13 @@ class NetworkPlotter:
                 
                 layer_display_counts[layer_id] = num_neurons_display
         
+        # Dictionary to store layer heights across all levels (needed for global centering)
+        layer_heights = {}
+        
         # Calculate positions for each level
         for level_idx, layer_ids in enumerate(levels):
             # X position for this level (apply spacing multiplier)
             x_pos = level_idx * self.config.layer_spacing * self.config.layer_spacing_multiplier
-            
-            # Calculate heights for all layers in this level
-            layer_heights = {}
             
             # Constants for ImageInput sizing
             DEFAULT_IMAGE_SIZE_MULTIPLIER = 15  # Default size multiplier for ImageInput rectangles
