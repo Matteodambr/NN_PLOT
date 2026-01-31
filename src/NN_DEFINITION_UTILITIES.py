@@ -284,6 +284,176 @@ class VectorInput(InputLayer):
             f"id='{self.layer_id[:8]}...')"
         )
 
+@dataclass
+class ImageInput(InputLayer):
+    """
+    Represents an image input layer for the neural network.
+    
+    This is used for image data (2D/3D) inputs, typically for CNN architectures.
+    ImageInput layers are automatically treated as root layers (no parents).
+    
+    The layer can display in several modes:
+    - Text mode: Shows a rounded rectangle with custom text
+    - Single image mode: Displays an actual image (with magnification/translation options)
+    - RGB channels mode: Separates RGB channels into 3 overlapped rectangles
+    
+    Attributes:
+        height (int): Height of the input image in pixels.
+        width (int): Width of the input image in pixels.
+        channels (int): Number of channels (1 for BW, 3 for RGB). Default: 3.
+        name (Optional[str]): Human-readable name for the layer.
+        layer_id (str): Unique identifier for this layer (auto-generated).
+        
+        # Display options
+        display_mode (str): How to render the layer - 'text', 'single_image', or 'rgb_channels'.
+                           Default: 'text'.
+        custom_text (Optional[str]): Text to display when display_mode='text'. If None, 
+                                     shows dimension info. Supports LaTeX.
+        custom_text_size (float): Font size for custom text. Default: 12.
+        
+        # Image options (when display_mode is 'single_image' or 'rgb_channels')
+        image_path (Optional[str]): Path or URL to the image file.
+        magnification (float): Magnification factor for image cropping (>1 zooms in). Default: 1.0.
+        translation_x (float): Horizontal offset from center (-1 to 1, where 1 = half width). Default: 0.
+        translation_y (float): Vertical offset from center (-1 to 1, where 1 = half height). Default: 0.
+        
+        # Styling options
+        rounded_corners (bool): Whether to use rounded corners for the rectangle(s). Default: True.
+        corner_radius (float): Radius of rounded corners (used by plotting). Default: 0.15.
+        color_mode (str): 'rgb' or 'bw' - whether to display as RGB or convert to black & white.
+                         Default: 'rgb' if channels==3, 'bw' if channels==1.
+    
+    Example:
+        >>> # Simple text display
+        >>> img_input = ImageInput(height=224, width=224, channels=3, name="Input Image")
+        
+        >>> # With custom text
+        >>> img_input = ImageInput(
+        ...     height=224, width=224, channels=3,
+        ...     display_mode='text',
+        ...     custom_text=r"$224 \\times 224 \\times 3$",
+        ...     custom_text_size=14
+        ... )
+        
+        >>> # Display actual image
+        >>> img_input = ImageInput(
+        ...     height=224, width=224, channels=3,
+        ...     display_mode='single_image',
+        ...     image_path='https://example.com/cat.jpg',
+        ...     magnification=1.5,
+        ...     translation_x=0.2
+        ... )
+        
+        >>> # Display RGB channels separately
+        >>> img_input = ImageInput(
+        ...     height=224, width=224, channels=3,
+        ...     display_mode='rgb_channels',
+        ...     image_path='path/to/image.jpg'
+        ... )
+    """
+    height: int
+    width: int
+    channels: int = 3
+    name: Optional[str] = None
+    layer_id: Optional[str] = None
+    
+    # Display options
+    display_mode: str = "text"
+    custom_text: Optional[str] = None
+    custom_text_size: float = 12
+    
+    # Image options
+    image_path: Optional[str] = None
+    magnification: float = 1.0
+    translation_x: float = 0.0
+    translation_y: float = 0.0
+    
+    # Styling options
+    rounded_corners: bool = True
+    corner_radius: float = 0.15
+    color_mode: Optional[str] = None
+    
+    def __post_init__(self):
+        """Validate the layer configuration after initialization."""
+        # Validate dimensions
+        if self.height <= 0 or self.width <= 0:
+            raise ValueError("Image dimensions (height, width) must be positive")
+        if self.channels not in (1, 3):
+            raise ValueError("Channels must be 1 (BW) or 3 (RGB)")
+        
+        # Validate display_mode
+        if self.display_mode not in ("text", "single_image", "rgb_channels"):
+            raise ValueError(
+                "display_mode must be 'text', 'single_image', or 'rgb_channels'"
+            )
+        
+        # Validate that image_path is provided for image modes
+        if self.display_mode in ("single_image", "rgb_channels") and self.image_path is None:
+            raise ValueError(
+                f"image_path must be provided when display_mode='{self.display_mode}'"
+            )
+        
+        # Validate magnification
+        if self.magnification <= 0:
+            raise ValueError("Magnification must be positive")
+        
+        # Validate translation range
+        if not (-1 <= self.translation_x <= 1):
+            raise ValueError("translation_x must be between -1 and 1")
+        if not (-1 <= self.translation_y <= 1):
+            raise ValueError("translation_y must be between -1 and 1")
+        
+        # Set default color_mode based on channels if not specified
+        if self.color_mode is None:
+            self.color_mode = "rgb" if self.channels == 3 else "bw"
+        
+        # Validate color_mode
+        if self.color_mode not in ("rgb", "bw"):
+            raise ValueError("color_mode must be 'rgb' or 'bw'")
+        
+        # Validate consistency between channels and display_mode
+        if self.display_mode == "rgb_channels" and self.channels != 3:
+            raise ValueError(
+                "display_mode='rgb_channels' requires channels=3"
+            )
+        
+        # Initialize the base Layer class
+        super().__init__(
+            layer_type=LayerType.INPUT_IMAGE,
+            name=self.name,
+            layer_id=self.layer_id
+        )
+    
+    @property
+    def num_neurons(self) -> int:
+        """Alias for compatibility with plotting. Returns flattened size."""
+        return self.height * self.width * self.channels
+    
+    def get_output_size(self) -> int:
+        """
+        Get the output size of this input layer.
+        
+        Returns:
+            int: Total number of pixels (height * width * channels).
+        """
+        return self.height * self.width * self.channels
+    
+    def __str__(self) -> str:
+        """Return a human-readable string representation of the layer."""
+        parts = [f"ImageInput({self.height}×{self.width}×{self.channels})"]
+        if self.name:
+            parts.append(f"name='{self.name}'")
+        if self.display_mode != "text":
+            parts.append(f"mode='{self.display_mode}'")
+        return ", ".join(parts)
+    
+    def __repr__(self) -> str:
+        """Return a developer-friendly string representation of the layer."""
+        return (
+            f"ImageInput(size=({self.height}×{self.width}×{self.channels}), "
+            f"mode='{self.display_mode}', name='{self.name}', id='{self.layer_id[:8]}...')"
+        )
+
 
 class NeuralNetwork:
     """

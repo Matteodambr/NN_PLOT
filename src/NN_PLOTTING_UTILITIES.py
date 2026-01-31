@@ -12,19 +12,25 @@ from matplotlib.collections import LineCollection
 import matplotlib as mpl
 from typing import List, Dict, Tuple, Optional, Set
 from dataclasses import dataclass, field
+import numpy as np
+from PIL import Image
+import io
+import requests
 
 # Import from the definition utilities
 try:
     from .NN_DEFINITION_UTILITIES import (
         NeuralNetwork,
         FullyConnectedLayer,
-        VectorInput
+        VectorInput,
+        ImageInput
     )
 except ImportError:
     from NN_DEFINITION_UTILITIES import (
         NeuralNetwork,
         FullyConnectedLayer,
-        VectorInput
+        VectorInput,
+        ImageInput
     )
 
 
@@ -848,10 +854,350 @@ class NetworkPlotter:
         
         return levels
     
+    def _load_image(self, image_path: str) -> Optional[np.ndarray]:
+        """Load an image from a file path or URL.
+        
+        Args:
+            image_path: Path to local file or URL to image
+            
+        Returns:
+            numpy array with shape (H, W, 3) for RGB or (H, W) for grayscale, or None if failed
+        """
+        try:
+            if image_path.startswith(('http://', 'https://')):
+                # Load from URL
+                response = requests.get(image_path, timeout=10)
+                response.raise_for_status()
+                img = Image.open(io.BytesIO(response.content))
+            else:
+                # Load from local file
+                img = Image.open(image_path)
+            
+            # Convert to RGB if it has an alpha channel or is in other mode
+            if img.mode == 'RGBA':
+                # Create white background
+                background = Image.new('RGB', img.size, (255, 255, 255))
+                background.paste(img, mask=img.split()[3])  # Use alpha channel as mask
+                img = background
+            elif img.mode != 'RGB' and img.mode != 'L':
+                img = img.convert('RGB')
+            
+            # Convert to numpy array
+            img_array = np.array(img)
+            return img_array
+        except Exception as e:
+            print(f"Warning: Could not load image from {image_path}: {e}")
+            return None
+    
+    def _apply_image_transforms(self, img_array: np.ndarray, magnification: float, 
+                                translation_x: float, translation_y: float,
+                                target_aspect: Optional[float] = None) -> np.ndarray:
+        """Apply magnification and translation to an image.
+        
+        Args:
+            img_array: Input image as numpy array
+            magnification: Magnification factor (>1 zooms in)
+            translation_x: Horizontal offset from center (-1 to 1)
+            translation_y: Vertical offset from center (-1 to 1)
+            target_aspect: Optional target aspect ratio (width/height) to crop to
+            
+        Returns:
+            Transformed image array
+        """
+        h, w = img_array.shape[:2]
+        
+        # Calculate crop dimensions based on magnification
+        crop_h = int(h / magnification)
+        crop_w = int(w / magnification)
+        
+        # If target aspect ratio is specified, adjust crop dimensions
+        if target_aspect is not None:
+            current_aspect = crop_w / crop_h
+            if current_aspect > target_aspect:
+                # Too wide, reduce width
+                crop_w = int(crop_h * target_aspect)
+            elif current_aspect < target_aspect:
+                # Too tall, reduce height
+                crop_h = int(crop_w / target_aspect)
+        
+        # Calculate center position with translation
+        center_x = w / 2 + translation_x * (w / 2)
+        center_y = h / 2 + translation_y * (h / 2)
+        
+        # Calculate crop boundaries
+        left = int(max(0, center_x - crop_w / 2))
+        right = int(min(w, center_x + crop_w / 2))
+        top = int(max(0, center_y - crop_h / 2))
+        bottom = int(min(h, center_y + crop_h / 2))
+        
+        # Crop the image
+        cropped = img_array[top:bottom, left:right]
+        
+        return cropped
+    
+    def _convert_to_bw(self, img_array: np.ndarray) -> np.ndarray:
+        """Convert RGB image to black and white.
+        
+        Args:
+            img_array: Input image as numpy array (H, W, 3) or (H, W)
+            
+        Returns:
+            Black and white image array (H, W, 3) with grayscale values in all channels
+        """
+        if len(img_array.shape) == 2:
+            # Already grayscale, convert to RGB format
+            return np.stack([img_array] * 3, axis=-1)
+        elif img_array.shape[2] >= 3:
+            # Convert RGB to grayscale using standard weights
+            gray = np.dot(img_array[..., :3], [0.299, 0.587, 0.114])
+            # Convert back to 3-channel for display
+            return np.stack([gray] * 3, axis=-1).astype(np.uint8)
+        else:
+            return img_array
+    
+    def _draw_image_input_layer(self, ax: plt.Axes, layer: ImageInput, 
+                                layer_id: str, positions: List[Tuple[float, float]]) -> None:
+        """Draw an ImageInput layer as a rectangle with image or text.
+        
+        Args:
+            ax: Matplotlib axes
+            layer: ImageInput layer object
+            layer_id: Layer identifier
+            positions: List of neuron positions (used to get center position)
+        """
+        if not positions:
+            return
+        
+        # Get layer style
+        layer_style = self._get_layer_style(layer_id, layer.name)
+        
+        # Calculate center position - use the center of all neuron positions
+        center_x = np.mean([p[0] for p in positions])
+        center_y = np.mean([p[1] for p in positions])
+        
+        # Determine rectangle dimensions based on image aspect ratio
+        aspect_ratio = layer.width / layer.height
+        
+        # Base size for the rectangle (will be scaled by aspect ratio)
+        base_size = self.config.neuron_spacing * 2.0  # Make it reasonably sized
+        
+        if aspect_ratio > 1:
+            # Wider than tall
+            rect_width = base_size * aspect_ratio
+            rect_height = base_size
+        else:
+            # Taller than wide
+            rect_width = base_size
+            rect_height = base_size / aspect_ratio
+        
+        # Handle different display modes
+        if layer.display_mode == 'text':
+            # Draw a single rounded rectangle with text
+            self._draw_text_mode_rectangle(ax, layer, center_x, center_y, 
+                                          rect_width, rect_height, layer_style)
+        
+        elif layer.display_mode == 'single_image':
+            # Draw a single rectangle with the image
+            self._draw_single_image_rectangle(ax, layer, center_x, center_y,
+                                             rect_width, rect_height, layer_style)
+        
+        elif layer.display_mode == 'rgb_channels':
+            # Draw 3 overlapped rectangles, one for each RGB channel
+            self._draw_rgb_channels_rectangles(ax, layer, center_x, center_y,
+                                              rect_width, rect_height, layer_style)
+    
+    def _draw_text_mode_rectangle(self, ax: plt.Axes, layer: ImageInput,
+                                  center_x: float, center_y: float,
+                                  width: float, height: float,
+                                  layer_style) -> None:
+        """Draw a rounded rectangle with text for ImageInput in text mode."""
+        # Get colors
+        fill_color = layer_style.neuron_fill_color or 'lightyellow'
+        edge_color = layer_style.neuron_edge_color or self.config.neuron_edge_color
+        edge_width = layer_style.neuron_edge_width if layer_style.neuron_edge_width is not None else self.config.neuron_edge_width
+        
+        # Corner radius
+        corner_radius = layer.corner_radius if layer.rounded_corners else 0
+        
+        # Draw rounded rectangle
+        rect = mpatches.FancyBboxPatch(
+            (center_x - width/2, center_y - height/2),
+            width, height,
+            boxstyle=f"round,pad=0,rounding_size={corner_radius}",
+            facecolor=fill_color,
+            edgecolor=edge_color,
+            linewidth=edge_width,
+            zorder=10
+        )
+        ax.add_patch(rect)
+        
+        # Determine text to display
+        if layer.custom_text is not None:
+            text = layer.custom_text
+            fontsize = layer.custom_text_size
+        else:
+            # Default text showing dimensions
+            text = f"{layer.height}×{layer.width}×{layer.channels}"
+            fontsize = 10
+        
+        # Draw text
+        ax.text(
+            center_x, center_y, text,
+            ha='center', va='center',
+            fontsize=fontsize,
+            fontname=self.config.font_family,
+            zorder=11
+        )
+    
+    def _draw_single_image_rectangle(self, ax: plt.Axes, layer: ImageInput,
+                                     center_x: float, center_y: float,
+                                     width: float, height: float,
+                                     layer_style) -> None:
+        """Draw a rectangle with an actual image for ImageInput in single_image mode."""
+        # Load the image
+        img_array = self._load_image(layer.image_path)
+        
+        if img_array is None:
+            # Fallback to text mode if image can't be loaded
+            self._draw_text_mode_rectangle(ax, layer, center_x, center_y, 
+                                          width, height, layer_style)
+            return
+        
+        # Convert to BW if requested
+        if layer.color_mode == 'bw':
+            img_array = self._convert_to_bw(img_array)
+        
+        # Apply transforms (magnification, translation)
+        img_array = self._apply_image_transforms(
+            img_array, 
+            layer.magnification,
+            layer.translation_x,
+            layer.translation_y,
+            target_aspect=layer.width / layer.height
+        )
+        
+        # Display the image
+        extent = [
+            center_x - width/2, center_x + width/2,
+            center_y - height/2, center_y + height/2
+        ]
+        ax.imshow(img_array, extent=extent, aspect='auto', zorder=10)
+        
+        # Draw border if rounded corners are requested
+        if layer.rounded_corners:
+            edge_color = layer_style.neuron_edge_color or self.config.neuron_edge_color
+            edge_width = layer_style.neuron_edge_width if layer_style.neuron_edge_width is not None else self.config.neuron_edge_width
+            corner_radius = layer.corner_radius
+            
+            rect = mpatches.FancyBboxPatch(
+                (center_x - width/2, center_y - height/2),
+                width, height,
+                boxstyle=f"round,pad=0,rounding_size={corner_radius}",
+                facecolor='none',
+                edgecolor=edge_color,
+                linewidth=edge_width,
+                zorder=11
+            )
+            ax.add_patch(rect)
+    
+    def _draw_rgb_channels_rectangles(self, ax: plt.Axes, layer: ImageInput,
+                                      center_x: float, center_y: float,
+                                      width: float, height: float,
+                                      layer_style) -> None:
+        """Draw 3 overlapped rectangles for RGB channels in rgb_channels mode."""
+        # Load the image
+        img_array = self._load_image(layer.image_path)
+        
+        if img_array is None:
+            # Fallback to text mode if image can't be loaded
+            self._draw_text_mode_rectangle(ax, layer, center_x, center_y, 
+                                          width, height, layer_style)
+            return
+        
+        # Convert to BW if requested (though rgb_channels mode usually expects RGB)
+        if layer.color_mode == 'bw':
+            img_array = self._convert_to_bw(img_array)
+        
+        # Apply transforms
+        img_array = self._apply_image_transforms(
+            img_array,
+            layer.magnification,
+            layer.translation_x,
+            layer.translation_y,
+            target_aspect=layer.width / layer.height
+        )
+        
+        # Separate into channels
+        if len(img_array.shape) == 3 and img_array.shape[2] >= 3:
+            r_channel = img_array[:, :, 0]
+            g_channel = img_array[:, :, 1]
+            b_channel = img_array[:, :, 2]
+        else:
+            # Grayscale - use same for all channels
+            r_channel = g_channel = b_channel = img_array[:, :, 0] if len(img_array.shape) == 3 else img_array
+        
+        # Offset between rectangles for overlap effect
+        offset_x = width * 0.15
+        offset_y = height * 0.15
+        
+        # Draw each channel as a separate rectangle, slightly offset
+        channels = [
+            (r_channel, 'red', -offset_x, offset_y),      # Red - left/top
+            (g_channel, 'green', 0, 0),                    # Green - center
+            (b_channel, 'blue', offset_x, -offset_y)       # Blue - right/bottom
+        ]
+        
+        edge_color = layer_style.neuron_edge_color or self.config.neuron_edge_color
+        edge_width = layer_style.neuron_edge_width if layer_style.neuron_edge_width is not None else self.config.neuron_edge_width
+        corner_radius = layer.corner_radius if layer.rounded_corners else 0
+        
+        for channel_data, color_name, dx, dy in channels:
+            # Create RGB image from single channel with color tint
+            if color_name == 'red':
+                tinted = np.stack([channel_data, channel_data * 0.3, channel_data * 0.3], axis=-1)
+            elif color_name == 'green':
+                tinted = np.stack([channel_data * 0.3, channel_data, channel_data * 0.3], axis=-1)
+            else:  # blue
+                tinted = np.stack([channel_data * 0.3, channel_data * 0.3, channel_data], axis=-1)
+            
+            tinted = tinted.astype(np.uint8)
+            
+            # Calculate position for this channel
+            ch_center_x = center_x + dx
+            ch_center_y = center_y + dy
+            
+            # Display the channel image
+            extent = [
+                ch_center_x - width/2, ch_center_x + width/2,
+                ch_center_y - height/2, ch_center_y + height/2
+            ]
+            ax.imshow(tinted, extent=extent, aspect='auto', zorder=10, alpha=0.7)
+            
+            # Draw border
+            if layer.rounded_corners:
+                rect = mpatches.FancyBboxPatch(
+                    (ch_center_x - width/2, ch_center_y - height/2),
+                    width, height,
+                    boxstyle=f"round,pad=0,rounding_size={corner_radius}",
+                    facecolor='none',
+                    edgecolor=edge_color,
+                    linewidth=edge_width,
+                    zorder=11
+                )
+                ax.add_patch(rect)
+    
     def _draw_neurons(self, ax: plt.Axes, network: NeuralNetwork) -> None:
-        """Draw neurons as circles, with ellipsis for collapsed layers."""
+        """Draw neurons as circles, with ellipsis for collapsed layers.
+        
+        For ImageInput layers, draws rectangles with images or text instead of neurons.
+        """
         for layer_id, positions in self.neuron_positions.items():
             layer = network.get_layer(layer_id)
+            
+            # Special handling for ImageInput layers
+            if isinstance(layer, ImageInput):
+                self._draw_image_input_layer(ax, layer, layer_id, positions)
+                continue
             
             # Get layer-specific style or use defaults
             layer_style = self._get_layer_style(layer_id, layer.name)
