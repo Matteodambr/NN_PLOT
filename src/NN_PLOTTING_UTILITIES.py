@@ -1138,11 +1138,34 @@ class NetworkPlotter:
             Tuple of (width, height) for the box
         """
         # Measure text dimensions to size the box appropriately
+        # Note: Text is rendered as bold, so we need to account for that
         fontsize = self.config.neuron_text_label_fontsize
-        text_width, text_height = self._get_text_dimensions(ax, layer.text, fontsize)
         
-        # Add padding around the text (minimum padding)
-        padding = 0.3
+        # Create a temporary bold text to measure accurately
+        from matplotlib.font_manager import FontProperties
+        try:
+            # Try to measure with bold font
+            import matplotlib.pyplot as plt
+            fig = ax.get_figure()
+            xlim = ax.get_xlim()
+            ylim = ax.get_ylim()
+            temp_text = ax.text(xlim[0], ylim[0], layer.text, 
+                               fontsize=fontsize, fontweight='bold')
+            fig.canvas.draw()
+            renderer = fig.canvas.get_renderer()
+            bbox = temp_text.get_window_extent(renderer=renderer)
+            inv_transform = ax.transData.inverted()
+            bbox_data = inv_transform.transform_bbox(bbox)
+            text_width, text_height = bbox_data.width, bbox_data.height
+            temp_text.remove()
+        except Exception:
+            # Fallback: measure normal text and add extra for bold
+            text_width, text_height = self._get_text_dimensions(ax, layer.text, fontsize)
+            # Bold text is typically ~10-15% wider
+            text_width *= 1.15
+        
+        # Add generous padding around the text
+        padding = 0.4  # Increased from 0.3
         box_width = max(text_width + 2 * padding, 1.5)  # Minimum width of 1.5
         box_height = max(text_height + 2 * padding, 0.8)  # Minimum height of 0.8
         
