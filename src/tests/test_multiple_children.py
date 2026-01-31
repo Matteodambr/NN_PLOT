@@ -10,7 +10,8 @@ from src.NN_DEFINITION_UTILITIES import (
     NeuralNetwork,
     FullyConnectedLayer,
     VectorInput,
-    NetworkType
+    NetworkType,
+    VectorOutput
 )
 
 
@@ -114,7 +115,7 @@ def test_fc_with_many_children():
         
         # Each branch gets its own output
         nn.add_layer(
-            FullyConnectedLayer(
+            VectorOutput(
                 num_neurons=10,
                 activation="softmax",
                 name=f"Output {i}"

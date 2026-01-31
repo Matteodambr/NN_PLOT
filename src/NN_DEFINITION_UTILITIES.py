@@ -25,6 +25,8 @@ class LayerType(Enum):
     FULLY_CONNECTED = "fully_connected"
     INPUT_VECTOR = "input_vector"
     INPUT_IMAGE = "input_image"
+    OUTPUT_VECTOR = "output_vector"
+    OUTPUT_GENERIC = "output_generic"
     # Future types can be added here:
     # CONVOLUTIONAL = "convolutional"
     # POOLING = "pooling"
@@ -478,6 +480,185 @@ class ImageInput(InputLayer):
         )
 
 
+class OutputLayer(Layer):
+    """
+    Abstract base class for all output layer types.
+    
+    Output layers are automatically treated as leaf layers (no children) when added
+    to a network. They represent the final output of the network.
+    
+    Subclasses:
+        - VectorOutput: For output layers with individual neurons (like fully connected)
+        - GenericOutput: For generic output layers displayed as a rounded box with text
+    """
+    
+    @property
+    def is_output_layer(self) -> bool:
+        """Mark this as an output layer for automatic leaf detection."""
+        return True
+
+
+@dataclass
+class VectorOutput(OutputLayer):
+    """
+    Represents a vector output layer with individual neurons (similar to fully connected layer).
+    
+    This output layer displays individual neurons and is suitable for classification,
+    regression, or any task where you want to show the individual output units.
+    It inherits all customization options from fully connected layers.
+    
+    Attributes:
+        num_neurons (int): Number of output neurons.
+        activation (Optional[str]): Activation function name (e.g., 'sigmoid', 'softmax', 'linear').
+        name (Optional[str]): Human-readable name for the layer.
+        layer_id (str): Unique identifier for this layer (auto-generated).
+        use_bias (bool): Whether this layer uses bias terms. Defaults to True.
+        neuron_labels (Optional[List[str]]): Text labels for each neuron (supports LaTeX).
+        label_position (str): Position of labels relative to neurons ('left' or 'right'). Default: 'right'.
+    
+    Example:
+        >>> output_layer = VectorOutput(num_neurons=10, activation="softmax", name="Output")
+        >>> print(output_layer.get_output_size())
+        10
+        >>> 
+        >>> # Output layer with LaTeX labels
+        >>> output_layer = VectorOutput(
+        ...     num_neurons=3,
+        ...     name="Classes",
+        ...     neuron_labels=[r"$y_1$", r"$y_2$", r"$y_3$"],
+        ...     label_position="right"
+        ... )
+    """
+    num_neurons: int
+    activation: Optional[str] = None
+    name: Optional[str] = None
+    layer_id: Optional[str] = None
+    use_bias: bool = True
+    neuron_labels: Optional[List[str]] = None
+    label_position: str = "right"
+    
+    def __post_init__(self):
+        """Validate the layer configuration after initialization."""
+        if self.num_neurons <= 0:
+            raise ValueError("Number of neurons must be positive")
+        
+        # Validate neuron_labels if provided
+        if self.neuron_labels is not None:
+            if len(self.neuron_labels) != self.num_neurons:
+                raise ValueError(
+                    f"Number of neuron_labels ({len(self.neuron_labels)}) must match "
+                    f"num_neurons ({self.num_neurons})"
+                )
+        
+        # Validate label_position
+        if self.label_position not in ("left", "right"):
+            raise ValueError("label_position must be 'left' or 'right'")
+        
+        # Initialize the base Layer class
+        super().__init__(
+            layer_type=LayerType.OUTPUT_VECTOR,
+            name=self.name,
+            layer_id=self.layer_id
+        )
+    
+    def get_output_size(self) -> int:
+        """
+        Get the output size of this output layer.
+        
+        Returns:
+            int: Number of neurons (output units) in this layer.
+        """
+        return self.num_neurons
+    
+    def __str__(self) -> str:
+        """Return a human-readable string representation of the layer."""
+        parts = [f"VectorOutput({self.num_neurons} neurons)"]
+        if self.activation:
+            parts.append(f"activation={self.activation}")
+        if self.name:
+            parts.append(f"name='{self.name}'")
+        if not self.use_bias:
+            parts.append("no_bias")
+        return ", ".join(parts)
+    
+    def __repr__(self) -> str:
+        """Return a developer-friendly string representation of the layer."""
+        return (
+            f"VectorOutput(neurons={self.num_neurons}, "
+            f"activation={self.activation}, name='{self.name}', "
+            f"id='{self.layer_id[:8]}...')"
+        )
+
+
+@dataclass
+class GenericOutput(OutputLayer):
+    """
+    Represents a generic output layer displayed as a rounded box with text.
+    
+    This output layer is displayed as a rounded box containing text, suitable for
+    representing regression outputs, classification outputs, or any output where
+    you don't need to show individual neurons. The text is customizable.
+    
+    Attributes:
+        output_size (int): The dimensionality of the output (used for connections).
+        text (str): The text to display in the box (e.g., "Regression", "Classification", "Softmax").
+        name (Optional[str]): Human-readable name for the layer.
+        layer_id (str): Unique identifier for this layer (auto-generated).
+    
+    Example:
+        >>> # Classification output
+        >>> output_layer = GenericOutput(output_size=10, text="Classification", name="Output")
+        >>> 
+        >>> # Regression output
+        >>> output_layer = GenericOutput(output_size=1, text="Regression", name="Output")
+        >>> 
+        >>> # Custom text
+        >>> output_layer = GenericOutput(output_size=5, text="Custom Output", name="Output")
+    """
+    output_size: int
+    text: str = "Output"
+    name: Optional[str] = None
+    layer_id: Optional[str] = None
+    
+    def __post_init__(self):
+        """Validate the layer configuration after initialization."""
+        if self.output_size <= 0:
+            raise ValueError("Output size must be positive")
+        
+        if not self.text:
+            raise ValueError("Text cannot be empty")
+        
+        # Initialize the base Layer class
+        super().__init__(
+            layer_type=LayerType.OUTPUT_GENERIC,
+            name=self.name,
+            layer_id=self.layer_id
+        )
+    
+    def get_output_size(self) -> int:
+        """
+        Get the output size of this output layer.
+        
+        Returns:
+            int: The dimensionality of the output.
+        """
+        return self.output_size
+    
+    def __str__(self) -> str:
+        """Return a human-readable string representation of the layer."""
+        parts = [f"GenericOutput(size={self.output_size}, text='{self.text}')"]
+        if self.name:
+            parts.append(f"name='{self.name}'")
+        return ", ".join(parts)
+    
+    def __repr__(self) -> str:
+        """Return a developer-friendly string representation of the layer."""
+        return (
+            f"GenericOutput(size={self.output_size}, text='{self.text}', "
+            f"name='{self.name}', id='{self.layer_id[:8]}...')"
+        )
+
+
 class NeuralNetwork:
     """
     A class to represent and store neural network structure information.
@@ -680,6 +861,33 @@ class NeuralNetwork:
             List[str]: List of input layer IDs.
         """
         return self.get_root_layers()
+    
+    def has_output_layer(self) -> bool:
+        """
+        Check if the network has at least one output layer.
+        
+        An output layer is defined as either:
+        - A layer that inherits from OutputLayer (e.g., VectorOutput, GenericOutput)
+        - A leaf layer (layer with no children)
+        
+        Returns:
+            bool: True if the network has at least one output layer.
+        """
+        leaf_layers = self.get_leaf_layers()
+        return len(leaf_layers) > 0
+    
+    def get_output_layers(self) -> List[str]:
+        """
+        Get all output layers in the network.
+        
+        Output layers are leaf layers (layers with no children), which includes
+        VectorOutput, GenericOutput, and any FullyConnectedLayer added as the last
+        layer.
+        
+        Returns:
+            List[str]: List of output layer IDs.
+        """
+        return self.get_leaf_layers()
     
     def get_leaf_layers(self) -> List[str]:
         """

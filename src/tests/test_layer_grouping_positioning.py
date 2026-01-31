@@ -12,10 +12,12 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
-from src.NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer, VectorInput
+from src.NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer, VectorInput, VectorOutput
 from src.NN_PLOTTING_UTILITIES import plot_network, PlotConfig, LayerGroup
 
-output_dir = os.path.join(os.path.dirname(__file__), "test_outputs", "layer_grouping_final")
+# Create output directory at project root
+project_root = os.path.join(os.path.dirname(__file__), '..', '..')
+output_dir = os.path.join(project_root, "test_outputs", "layer_grouping_final")
 os.makedirs(output_dir, exist_ok=True)
 
 print("="*70)
@@ -28,7 +30,7 @@ l1_id = nn.add_layer(VectorInput(num_features=8, name="L1"))
 l2_id = nn.add_layer(FullyConnectedLayer(10, activation="relu", name="L2"), parent_ids=[l1_id])
 l3_id = nn.add_layer(FullyConnectedLayer(10, activation="relu", name="L3"), parent_ids=[l2_id])
 l4_id = nn.add_layer(FullyConnectedLayer(8, activation="relu", name="L4"), parent_ids=[l3_id])
-l5_id = nn.add_layer(FullyConnectedLayer(3, activation="softmax", name="L5"), parent_ids=[l4_id])
+l5_id = nn.add_layer(VectorOutput(3, activation="softmax", name="L5"), parent_ids=[l4_id])
 
 print("\nTest 1: With layer names and dimension/activation info...")
 config1 = PlotConfig(

@@ -53,6 +53,10 @@ pip install matplotlib
 - 🚧 `ConvolutionalLayer`: CNN-based layers (work in progress)
 - 🚧 `RecurrentLayer`: RNN/LSTM/GRU layers (work in progress)
 
+**Output Layers**
+- **`VectorOutput`**: Output layer with individual neurons (for classification, multi-output regression, etc.)
+- **`GenericOutput`**: Generic output layer displayed as a rounded box with custom text (for regression, classification, etc.)
+
 **Customization**
 - **`PlotConfig`**: Configuration for all visualization options
 - **`LayerStyle`**: Per-layer styling (colors, boxes, collapsing)
@@ -83,7 +87,7 @@ importlib.reload(NN_DEFINITION_UTILITIES)
 importlib.reload(NN_PLOTTING_UTILITIES)
 
 # Import the main components
-from NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer, VectorInput
+from NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer, VectorInput, VectorOutput, GenericOutput
 from NN_PLOTTING_UTILITIES import plot_network, PlotConfig, LayerGroup, LayerStyle
 
 # Configure matplotlib for inline display
@@ -103,7 +107,9 @@ Let's start by creating a basic feedforward neural network with an input layer, 
 
 **Layer Types:**
 - **`VectorInput`**: For input layers - automatically treated as root layers (no parents needed)
-- **`FullyConnectedLayer`**: For hidden and output layers with optional activation functions
+- **`FullyConnectedLayer`**: For hidden layers with optional activation functions
+- **`VectorOutput`**: For output layers with individual neurons (classification, multi-output)
+- **`GenericOutput`**: For generic output layers shown as a rounded box with text (regression, classification)
 
 **Appearance Options:**
 - `background_color`: Set to `"None"` for transparent, or any color name/RGB value
@@ -126,7 +132,8 @@ simple_nn = NeuralNetwork("Simple Feedforward Network")
 # VectorInput is for input layers - automatically treated as a root layer
 simple_nn.add_layer(VectorInput(num_features=4, name="Input"))
 simple_nn.add_layer(FullyConnectedLayer(num_neurons=6, activation="relu", name="Hidden"))
-simple_nn.add_layer(FullyConnectedLayer(num_neurons=2, activation="softmax", name="Output"))
+# VectorOutput for classification output with individual neurons
+simple_nn.add_layer(VectorOutput(num_neurons=2, activation="softmax", name="Output"))
 
 # Plot the network with custom appearance settings
 fig = plot_network(
@@ -182,11 +189,11 @@ fusion_id = multi_in_multi_out_nn.add_layer(
 
 # Two output heads branching from the fusion layer (multi-output)
 output1_id = multi_in_multi_out_nn.add_layer(
-    FullyConnectedLayer(num_neurons=2, activation="softmax", name="Classification"), 
+    VectorOutput(num_neurons=2, activation="softmax", name="Classification"), 
     parent_ids=[fusion_id]
 )
 output2_id = multi_in_multi_out_nn.add_layer(
-    FullyConnectedLayer(num_neurons=1, activation="linear", name="Regression"), 
+    GenericOutput(output_size=1, text="Regression", name="Regression Output"), 
     parent_ids=[fusion_id]
 )
 

@@ -11,7 +11,8 @@ from src.NN_DEFINITION_UTILITIES import (
     FullyConnectedLayer,
     VectorInput,
     NetworkType,
-    LayerType
+    LayerType,
+    VectorOutput
 )
 
 
@@ -114,7 +115,7 @@ def test_branching_with_fc_layers():
     
     # Merge branches
     output_id = nn.add_layer(
-        FullyConnectedLayer(num_neurons=10, activation="softmax", name="Output"),
+        VectorOutput(num_neurons=10, activation="softmax", name="Output"),
         parent_ids=[branch1_id, branch2_id]
     )
     

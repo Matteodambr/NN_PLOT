@@ -6,7 +6,7 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
-from src.NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer, VectorInput
+from src.NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer, VectorInput, VectorOutput
 from src.NN_PLOTTING_UTILITIES import plot_network, PlotConfig
 
 output_dir = os.path.join(os.path.dirname(__file__), "figures")
@@ -88,9 +88,9 @@ h4_2 = FullyConnectedLayer(300, activation="relu", name="H2")
 nn4.add_layer(h4_2, parent_ids=[h4_1.layer_id])
 h4_3 = FullyConnectedLayer(300, activation="relu", name="H3")
 nn4.add_layer(h4_3, parent_ids=[h4_2.layer_id])
-out4a = FullyConnectedLayer(7, activation="softmax", name="Head1")
+out4a = VectorOutput(7, activation="softmax", name="Head1")
 nn4.add_layer(out4a, parent_ids=[h4_3.layer_id])
-out4b = FullyConnectedLayer(7, activation="softmax", name="Head2")
+out4b = VectorOutput(7, activation="softmax", name="Head2")
 nn4.add_layer(out4b, parent_ids=[h4_3.layer_id])
 
 config4 = PlotConfig(

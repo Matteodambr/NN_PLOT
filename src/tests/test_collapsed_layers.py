@@ -6,8 +6,13 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
-from src.NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer, VectorInput
+from src.NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer, VectorInput, VectorOutput
 from src.NN_PLOTTING_UTILITIES import plot_network, PlotConfig
+
+# Create output directory at project root
+project_root = os.path.join(os.path.dirname(__file__), '..', '..')
+output_dir = os.path.join(project_root, "test_outputs")
+os.makedirs(output_dir, exist_ok=True)
 
 print("=" * 60)
 print("Testing Collapsed Layers Feature")
@@ -29,7 +34,7 @@ config_default = PlotConfig(
 plot_network(
     nn_large,
     title="Network with Large Hidden Layer (100 neurons, max_display=20)",
-    save_path=os.path.join(os.path.dirname(__file__), "test_outputs", "test_collapsed_default.png"),
+    save_path=os.path.join(output_dir, "test_collapsed_default.png"),
     show=False,
     config=config_default
 )
@@ -46,7 +51,7 @@ config_aggressive = PlotConfig(
 plot_network(
     nn_large,
     title="Network with Aggressive Collapsing (max_display=10)",
-    save_path=os.path.join(os.path.dirname(__file__), "test_outputs", "test_collapsed_aggressive.png"),
+    save_path=os.path.join(output_dir, "test_collapsed_aggressive.png"),
     show=False,
     config=config_aggressive
 )
@@ -69,7 +74,7 @@ config_all_large = PlotConfig(
 plot_network(
     nn_all_large,
     title="All Layers Collapsed (all have >15 neurons)",
-    save_path=os.path.join(os.path.dirname(__file__), "test_outputs", "test_all_collapsed.png"),
+    save_path=os.path.join(output_dir, "test_all_collapsed.png"),
     show=False,
     config=config_all_large
 )
@@ -82,7 +87,7 @@ nn_mixed = NeuralNetwork("Mixed Network")
 nn_mixed.add_layer(VectorInput(num_features=3, name="SmallInput"))
 nn_mixed.add_layer(FullyConnectedLayer(num_neurons=50, activation="relu", name="LargeHidden"))
 nn_mixed.add_layer(FullyConnectedLayer(num_neurons=8, activation="relu", name="MediumHidden"))
-nn_mixed.add_layer(FullyConnectedLayer(num_neurons=2, activation="softmax", name="SmallOutput"))
+nn_mixed.add_layer(VectorOutput(num_neurons=2, activation="softmax", name="SmallOutput"))
 
 config_mixed = PlotConfig(
     figsize=(14, 8),
@@ -92,7 +97,7 @@ config_mixed = PlotConfig(
 plot_network(
     nn_mixed,
     title="Mixed Network (only middle layer collapsed)",
-    save_path=os.path.join(os.path.dirname(__file__), "test_outputs", "test_mixed_collapse.png"),
+    save_path=os.path.join(output_dir, "test_mixed_collapse.png"),
     show=False,
     config=config_mixed
 )
@@ -104,7 +109,7 @@ print("\n[Test 5] Collapsed layer with neuron indices shown")
 nn_labeled = NeuralNetwork("Labeled Network")
 nn_labeled.add_layer(VectorInput(num_features=4, name="Input"))
 nn_labeled.add_layer(FullyConnectedLayer(num_neurons=30, activation="relu", name="Hidden"))
-nn_labeled.add_layer(FullyConnectedLayer(num_neurons=2, activation="softmax", name="Output"))
+nn_labeled.add_layer(VectorOutput(num_neurons=2, activation="softmax", name="Output"))
 
 config_labeled = PlotConfig(
     figsize=(14, 8),
@@ -115,7 +120,7 @@ config_labeled = PlotConfig(
 plot_network(
     nn_labeled,
     title="Collapsed Layer with Neuron Indices (0, 1, ..., 28, 29)",
-    save_path=os.path.join(os.path.dirname(__file__), "test_outputs", "test_collapsed_with_labels.png"),
+    save_path=os.path.join(output_dir, "test_collapsed_with_labels.png"),
     show=False,
     config=config_labeled
 )

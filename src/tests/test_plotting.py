@@ -13,7 +13,8 @@ from src.NN_DEFINITION_UTILITIES import (
     NeuralNetwork,
     FullyConnectedLayer,
     VectorInput,
-    NetworkType
+    NetworkType,
+    VectorOutput
 )
 from src.NN_PLOTTING_UTILITIES import plot_network, PlotConfig
 
@@ -221,7 +222,7 @@ def example_5_multi_branch():
             parent_ids=[shared_id]
         )
         nn.add_layer(
-            FullyConnectedLayer(num_neurons=2, activation="softmax", name=f"Output {i}"),
+            VectorOutput(num_neurons=2, activation="softmax", name=f"Output {i}"),
             parent_ids=[branch_id]
         )
     
@@ -258,7 +259,7 @@ def example_6_custom_styling():
     
     nn.add_layer(VectorInput(num_features=5, name="Input"))
     nn.add_layer(FullyConnectedLayer(num_neurons=7, activation="relu", name="Hidden"))
-    nn.add_layer(FullyConnectedLayer(num_neurons=3, activation="softmax", name="Output"))
+    nn.add_layer(VectorOutput(num_neurons=3, activation="softmax", name="Output"))
     
     print(nn)
     print("\nPlotting with custom styling...")

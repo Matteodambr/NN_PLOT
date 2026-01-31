@@ -6,10 +6,24 @@ represented as circles and connections as lines.
 Currently supports visualization of feedforward neural networks with fully connected layers.
 """
 
-import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
-from matplotlib.collections import LineCollection
-import matplotlib as mpl
+# Check for matplotlib availability
+_MATPLOTLIB_AVAILABLE = True
+_MATPLOTLIB_CHECK_DONE = False
+_MATPLOTLIB_ERROR_MSG = None
+
+try:
+    import matplotlib.pyplot as plt
+    import matplotlib.patches as mpatches
+    from matplotlib.collections import LineCollection
+    import matplotlib as mpl
+except ImportError as e:
+    _MATPLOTLIB_AVAILABLE = False
+    _MATPLOTLIB_ERROR_MSG = str(e)
+    # Create dummy objects to prevent import errors in other parts
+    plt = None
+    mpatches = None
+    mpl = None
+
 from typing import List, Dict, Tuple, Optional, Set
 from dataclasses import dataclass, field
 import numpy as np
@@ -23,14 +37,18 @@ try:
         NeuralNetwork,
         FullyConnectedLayer,
         VectorInput,
-        ImageInput
+        ImageInput,
+        VectorOutput,
+        GenericOutput
     )
 except ImportError:
     from NN_DEFINITION_UTILITIES import (
         NeuralNetwork,
         FullyConnectedLayer,
         VectorInput,
-        ImageInput
+        ImageInput,
+        VectorOutput,
+        GenericOutput
     )
 
 
@@ -297,11 +315,18 @@ class NetworkPlotter:
         self.config = config or PlotConfig()
         # Set font for all text in the plot (including math text)
         try:
-            # Use LaTeX for publication-quality math rendering with proper accents
-            mpl.rcParams['text.usetex'] = True
-            mpl.rcParams['text.latex.preamble'] = r'\usepackage{amsmath} \usepackage{amssymb}'
-            mpl.rcParams['font.family'] = 'serif'
-            mpl.rcParams['font.serif'] = [self.config.font_family]
+            # Try to use LaTeX for publication-quality math rendering with proper accents
+            # First check if LaTeX is available
+            import subprocess
+            try:
+                subprocess.run(['latex', '--version'], capture_output=True, check=True, timeout=1)
+                mpl.rcParams['text.usetex'] = True
+                mpl.rcParams['text.latex.preamble'] = r'\usepackage{amsmath} \usepackage{amssymb}'
+                mpl.rcParams['font.family'] = 'serif'
+                mpl.rcParams['font.serif'] = [self.config.font_family]
+            except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
+                # LaTeX not available, use fallback
+                raise Exception("LaTeX not available")
         except Exception:
             # If LaTeX rendering fails, fall back to mathtext
             try:
@@ -323,6 +348,7 @@ class NetworkPlotter:
         self.collapsed_layers: Dict[str, bool] = {}  # Track which layers are collapsed
         self.collapsed_info: Dict[str, Dict] = {}  # Store info about collapsed neurons
         self.image_input_bounds: Dict[str, Tuple[float, float, float, float]] = {}  # Store (x_min, x_max, y_min, y_max) for ImageInput layers
+        self.generic_output_boxes: Dict[str, Tuple[float, float]] = {}  # Store GenericOutput box dimensions (width, height)
     
     def _get_layer_style(self, layer_id: str, layer_name: Optional[str]) -> LayerStyle:
         """
@@ -651,8 +677,15 @@ class NetworkPlotter:
                 self.collapsed_layers[layer_id] = False
                 continue
             
+            # Special handling for GenericOutput - just store center position
+            if isinstance(layer, GenericOutput):
+                # For GenericOutput, we just need the center position
+                self.neuron_positions[layer_id] = [(x_pos, 0)]  # Single center point
+                self.layer_positions[layer_id] = (x_pos, 0)
+                continue
+            
             # Get actual number of neurons
-            if isinstance(layer, FullyConnectedLayer):
+            if isinstance(layer, (FullyConnectedLayer, VectorOutput)):
                 actual_neurons = layer.num_neurons
             else:
                 actual_neurons = layer.get_output_size()
@@ -725,8 +758,13 @@ class NetworkPlotter:
                     self.collapsed_layers[layer_id] = False
                     continue
                 
+                # Special handling for GenericOutput
+                if isinstance(layer, GenericOutput):
+                    layer_display_counts[layer_id] = 1  # Single point for center
+                    continue
+                
                 # Get actual number of neurons
-                if isinstance(layer, FullyConnectedLayer):
+                if isinstance(layer, (FullyConnectedLayer, VectorOutput)):
                     actual_neurons = layer.num_neurons
                 else:
                     actual_neurons = layer.get_output_size()
@@ -1295,6 +1333,7 @@ class NetworkPlotter:
         """Draw neurons as circles, with ellipsis for collapsed layers.
         
         For ImageInput layers, draws rectangles with images or text instead of neurons.
+        GenericOutput layers are drawn as rounded boxes.
         """
         for layer_id, positions in self.neuron_positions.items():
             layer = network.get_layer(layer_id)
@@ -1304,11 +1343,16 @@ class NetworkPlotter:
                 self._draw_image_input_layer(ax, layer, layer_id, positions)
                 continue
             
+            # Special handling for GenericOutput - draw as a rounded box with text
+            if isinstance(layer, GenericOutput):
+                self._draw_generic_output(ax, layer, layer_id, positions[0])
+                continue
+            
             # Get layer-specific style or use defaults
             layer_style = self._get_layer_style(layer_id, layer.name)
             
             # Determine colors and edge properties
-            if isinstance(layer, FullyConnectedLayer):
+            if isinstance(layer, (FullyConnectedLayer, VectorOutput)):
                 fill_color = layer_style.neuron_fill_color or self.config.neuron_color
             else:
                 fill_color = layer_style.neuron_fill_color or 'lightgreen'
@@ -1325,7 +1369,7 @@ class NetworkPlotter:
             max_label_width = 0
             max_label_height = 0
             if (self.config.show_neuron_text_labels and 
-                isinstance(layer, (FullyConnectedLayer, VectorInput)) and 
+                isinstance(layer, (FullyConnectedLayer, VectorInput, VectorOutput)) and 
                 layer.neuron_labels is not None):
                 # Get the x-coordinate of the layer (all neurons in same layer have same x)
                 if positions:
@@ -1411,7 +1455,7 @@ class NetworkPlotter:
                     # Apply numbering direction
                     if self.config.neuron_numbering_reversed:
                         # Reverse: bottom-to-top (higher indices at top)
-                        if isinstance(layer, FullyConnectedLayer):
+                        if isinstance(layer, (FullyConnectedLayer, VectorOutput)):
                             total_neurons = layer.num_neurons
                         else:
                             total_neurons = layer.get_output_size()
@@ -1430,7 +1474,7 @@ class NetworkPlotter:
                 
                 # Add custom text labels if requested (skip for dots position)
                 if (self.config.show_neuron_text_labels and 
-                    isinstance(layer, (FullyConnectedLayer, VectorInput)) and 
+                    isinstance(layer, (FullyConnectedLayer, VectorInput, VectorOutput)) and 
                     layer.neuron_labels is not None and
                     not (is_collapsed and i == dots_position)):
                     
@@ -1534,6 +1578,90 @@ class NetworkPlotter:
                                 fontname=self.config.font_family,
                                 zorder=11)
     
+    def _get_generic_output_box_dimensions(self, ax: plt.Axes, layer: GenericOutput) -> Tuple[float, float]:
+        """
+        Calculate the dimensions needed for a GenericOutput box based on text size.
+        
+        Args:
+            ax: The matplotlib axes to use for text measurement
+            layer: The GenericOutput layer
+            
+        Returns:
+            Tuple of (width, height) for the box
+        """
+        # Measure text dimensions to size the box appropriately
+        # Note: Text is rendered as bold, so we need to account for that
+        fontsize = self.config.neuron_text_label_fontsize
+        
+        # Create a temporary bold text to measure accurately
+        from matplotlib.font_manager import FontProperties
+        try:
+            # Try to measure with bold font
+            import matplotlib.pyplot as plt
+            fig = ax.get_figure()
+            xlim = ax.get_xlim()
+            ylim = ax.get_ylim()
+            temp_text = ax.text(xlim[0], ylim[0], layer.text, 
+                               fontsize=fontsize, fontweight='bold')
+            fig.canvas.draw()
+            renderer = fig.canvas.get_renderer()
+            bbox = temp_text.get_window_extent(renderer=renderer)
+            inv_transform = ax.transData.inverted()
+            bbox_data = inv_transform.transform_bbox(bbox)
+            text_width, text_height = bbox_data.width, bbox_data.height
+            temp_text.remove()
+        except Exception:
+            # Fallback: measure normal text and add extra for bold
+            text_width, text_height = self._get_text_dimensions(ax, layer.text, fontsize)
+            # Bold text is typically ~10-15% wider
+            text_width *= 1.15
+        
+        # Add generous padding around the text
+        padding = 0.4  # Increased from 0.3
+        box_width = max(text_width + 2 * padding, 1.5)  # Minimum width of 1.5
+        box_height = max(text_height + 2 * padding, 0.8)  # Minimum height of 0.8
+        
+        return box_width, box_height
+    
+    def _draw_generic_output(self, ax: plt.Axes, layer: GenericOutput, layer_id: str, position: Tuple[float, float]) -> None:
+        """Draw a GenericOutput layer as a rounded box with text inside."""
+        x, y = position
+        
+        # Get layer-specific style or use defaults
+        layer_style = self._get_layer_style(layer_id, layer.name)
+        
+        # Calculate box dimensions based on text size
+        box_width, box_height = self._get_generic_output_box_dimensions(ax, layer)
+        
+        # Colors
+        fill_color = layer_style.neuron_fill_color or 'lightcoral'
+        edge_color = layer_style.neuron_edge_color or self.config.neuron_edge_color
+        edge_width = layer_style.neuron_edge_width if layer_style.neuron_edge_width is not None else self.config.neuron_edge_width
+        
+        # Draw the rounded box
+        from matplotlib.patches import FancyBboxPatch
+        box = FancyBboxPatch(
+            (x - box_width/2, y - box_height/2),
+            box_width,
+            box_height,
+            boxstyle='round,pad=0.1',
+            facecolor=fill_color,
+            edgecolor=edge_color,
+            linewidth=edge_width,
+            zorder=10
+        )
+        ax.add_patch(box)
+        
+        # Draw the text inside the box
+        ax.text(
+            x, y, layer.text,
+            ha='center', va='center',
+            fontsize=self.config.neuron_text_label_fontsize,
+            fontname=self.config.font_family,
+            fontweight='bold',
+            zorder=11
+        )
+    
     def _draw_layer_boxes(self, ax: plt.Axes, network: NeuralNetwork) -> None:
         """Draw rounded boxes around layers that have box_around_layer=True in their LayerStyle."""
         for layer_id, positions in self.neuron_positions.items():
@@ -1566,7 +1694,7 @@ class NetworkPlotter:
             max_y += padding
             
             # Extend box to include neuron labels if requested
-            if layer_style.box_include_neuron_labels and isinstance(layer, (FullyConnectedLayer, VectorInput)):
+            if layer_style.box_include_neuron_labels and isinstance(layer, (FullyConnectedLayer, VectorInput, VectorOutput)):
                 if layer.neuron_labels is not None and self.config.show_neuron_text_labels:
                     # Labels are positioned at neuron_text_label_offset from neuron center
                     # Box already includes neuron_radius + padding from center
@@ -1757,10 +1885,20 @@ class NetworkPlotter:
         all_x = []
         all_y = []
         
-        for positions in self.neuron_positions.values():
-            for x, y in positions:
-                all_x.append(x)
-                all_y.append(y)
+        for layer_id, positions in self.neuron_positions.items():
+            layer = network.get_layer(layer_id)
+            
+            # For GenericOutput, account for the box dimensions
+            if isinstance(layer, GenericOutput):
+                for x, y in positions:
+                    # Calculate box dimensions dynamically based on text
+                    box_width, box_height = self._get_generic_output_box_dimensions(ax, layer)
+                    all_x.extend([x - box_width/2, x + box_width/2])
+                    all_y.extend([y - box_height/2, y + box_height/2])
+            else:
+                for x, y in positions:
+                    all_x.append(x)
+                    all_y.append(y)
         
         # Add ImageInput bounds
         for layer_id, (x_min, x_max, y_min, y_max) in self.image_input_bounds.items():
@@ -1884,6 +2022,8 @@ class NetworkPlotter:
                     # For ImageInput, show "Image Input" with color mode indicator
                     color_indicator = f"({layer.color_mode.upper()})" if layer.color_mode else ""
                     label_parts.append(f"Image Input {color_indicator}".strip())
+                elif isinstance(layer, VectorOutput):
+                    label_parts.append("Output layer")
                 else:
                     # For other layer types, use a generic label or class name
                     idx = network._layer_order.index(layer_id)
@@ -1891,7 +2031,7 @@ class NetworkPlotter:
             
             # Line 3: Dimension information
             if show_dim:
-                if isinstance(layer, FullyConnectedLayer):
+                if isinstance(layer, (FullyConnectedLayer, VectorOutput)):
                     dim_text = f"Dim.: {layer.num_neurons}"
                     label_parts.append(dim_text)
                 elif isinstance(layer, ImageInput):
@@ -1903,7 +2043,7 @@ class NetworkPlotter:
             
             # Line 4: Activation information
             if show_activation:
-                if isinstance(layer, FullyConnectedLayer) and layer.activation:
+                if isinstance(layer, (FullyConnectedLayer, VectorOutput)) and layer.activation:
                     # Use capitalized version if available, otherwise use as-is
                     act_name = activation_display.get(layer.activation.lower(), layer.activation)
                     label_parts.append(f"Act.: {act_name}")
@@ -1913,6 +2053,8 @@ class NetworkPlotter:
                 # Fallback: if nothing is enabled, show layer type
                 if isinstance(layer, FullyConnectedLayer):
                     label = "FC layer"
+                elif isinstance(layer, VectorOutput):
+                    label = "Output layer"
                 else:
                     idx = network._layer_order.index(layer_id)
                     label = f"Layer {idx}"
@@ -2417,6 +2559,35 @@ class NetworkPlotter:
             ax.plot([x_min, x_max], [y, y], color=color, linewidth=linewidth, zorder=10)
 
 
+def _check_matplotlib_available():
+    """
+    Check if matplotlib is available and show a helpful error message if not.
+    This check is performed only once (on first call to plot_network).
+    """
+    global _MATPLOTLIB_CHECK_DONE
+    
+    if _MATPLOTLIB_CHECK_DONE:
+        return
+    
+    _MATPLOTLIB_CHECK_DONE = True
+    
+    if not _MATPLOTLIB_AVAILABLE:
+        error_msg = """
+================================================================================
+ERROR: matplotlib is not installed
+================================================================================
+
+This library requires matplotlib to generate network visualizations.
+Please install it using:
+
+    pip install matplotlib
+
+Then try again.
+================================================================================
+"""
+        raise ImportError(error_msg)
+
+
 # Convenience function for quick plotting
 def plot_network(
     network: NeuralNetwork,
@@ -2462,6 +2633,9 @@ def plot_network(
         >>> plot_network(nn, title="Network 2", ax=axes[1])
         >>> plt.show()
     """
+    # Check if matplotlib is available (only checked once)
+    _check_matplotlib_available()
+    
     # Force show=False when ax is provided (user must call plt.show() explicitly)
     if ax is not None:
         show = False
