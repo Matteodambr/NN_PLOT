@@ -450,7 +450,7 @@ class ImageInput(InputLayer):
     def __repr__(self) -> str:
         """Return a developer-friendly string representation of the layer."""
         return (
-            f"ImageInput(size=({self.height}×{self.width}×{self.channels}), "
+            f"ImageInput(height={self.height}, width={self.width}, channels={self.channels}, "
             f"mode='{self.display_mode}', name='{self.name}', id='{self.layer_id[:8]}...')"
         )
 

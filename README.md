@@ -35,7 +35,7 @@ pip install matplotlib
 | **Demo 5** | Spacing and Layout | Controlling layer spacing, neuron spacing, and branch spacing |
 | **Demo 6** | Complete Labeling | Neuron labels (LaTeX), layer labels, group brackets, variable names |
 | **Demo 7** | MLP Customization | Neuron collapsing for large layers with ellipsis notation |
-| **Demo 8** | CNN Customization | 🚧 Work in progress |
+| **Demo 8** | CNN Customization | ImageInput layer with text, image, and RGB channel modes |
 | **Demo 9** | RNN Customization | 🚧 Work in progress |
 
 ### Key Components
@@ -45,8 +45,8 @@ pip install matplotlib
 
 **Input Layers**
 - **`VectorInput`**: For tabular/vector input data
+- **`ImageInput`**: For image data with multiple display modes (text, single image, RGB channels)
 - 🚧 `SequenceInput`: For sequential/time-series data (work in progress)
-- 🚧 `ImageInput`: For image data (work in progress)
 
 **Intermediate Layers**
 - **`FullyConnectedLayer`**: Dense layer with neurons, activation, and optional labels
@@ -680,28 +680,93 @@ fig = plot_network(large_mlp, title="Large MLP with Neuron Collapsing and Number
 
 ## Demo 8: CNN-Specific Customization
 
-> ⚠️ **Work in Progress**: CNN layer visualization is under development. Future versions will include:
-> - Convolutional layer representations with kernel visualization
-> - Pooling layer indicators
-> - Feature map dimensions
-> - Filter count display
+CNN networks now support the **`ImageInput`** layer, which provides flexible visualization options for image inputs.
+
+### ImageInput Features
+
+The `ImageInput` layer supports three display modes:
+
+1. **Text Mode**: Display a rounded rectangle with dimension text
+2. **Single Image Mode**: Display an actual image from a file or URL
+3. **RGB Channels Mode**: Separate RGB channels into 3 overlapped rectangles
 
 ```python
-# Placeholder for CNN visualization
-print("🚧 CNN visualization coming soon!")
-print("   Planned features:")
-print("   - Conv2D layers with kernel size display")
-print("   - MaxPooling/AvgPooling layers")
-print("   - Feature map dimensions (H×W×C)")
-print("   - Stride and padding indicators")
+from NN_DEFINITION_UTILITIES import ImageInput, NeuralNetwork, FullyConnectedLayer
+from NN_PLOTTING_UTILITIES import NetworkPlotter, PlotConfig
+
+# Example 1: Text mode (default - no image file needed)
+network = NeuralNetwork(name="CNN with Text Input")
+
+img_input = ImageInput(
+    height=224,
+    width=224,
+    channels=3,
+    name="Input Image",
+    display_mode="text",
+    custom_text="224 x 224 x 3",  # Optional custom text
+    custom_text_size=14
+)
+network.add_layer(img_input, is_input=True)
+
+# Add CNN layers
+conv1 = FullyConnectedLayer(num_neurons=64, activation="ReLU", name="Conv1")
+network.add_layer(conv1, parent_ids=[img_input.layer_id])
+
+output = FullyConnectedLayer(num_neurons=10, activation="Softmax", name="Output")
+network.add_layer(output, parent_ids=[conv1.layer_id])
+
+# Plot
+config = PlotConfig(figsize=(10, 8))
+plotter = NetworkPlotter(config)
+plotter.plot_network(network, title="CNN with ImageInput", show=True)
 ```
 
-    🚧 CNN visualization coming soon!
-       Planned features:
-       - Conv2D layers with kernel size display
-       - MaxPooling/AvgPooling layers
-       - Feature map dimensions (H×W×C)
-       - Stride and padding indicators
+### Advanced ImageInput Features
+
+```python
+# Example 2: Display actual image with magnification
+img_input = ImageInput(
+    height=224,
+    width=224,
+    channels=3,
+    display_mode="single_image",
+    image_path="path/to/image.jpg",  # Local file or URL
+    magnification=1.5,                # Zoom in 1.5x
+    translation_x=0.2,                # Shift right
+    translation_y=-0.1,               # Shift up
+    rounded_corners=True              # Rounded rectangle (default)
+)
+
+# Example 3: Black & white conversion
+img_input = ImageInput(
+    height=224,
+    width=224,
+    channels=1,
+    display_mode="single_image",
+    image_path="color_image.jpg",
+    color_mode="bw"  # Convert to grayscale
+)
+
+# Example 4: RGB channel separation
+img_input = ImageInput(
+    height=224,
+    width=224,
+    channels=3,
+    display_mode="rgb_channels",
+    image_path="image.jpg"  # Shows 3 overlapped rectangles
+)
+```
+
+### ImageInput Parameters
+
+- **Basic dimensions**: `height`, `width`, `channels` (1 for BW, 3 for RGB)
+- **Display mode**: `"text"`, `"single_image"`, or `"rgb_channels"`
+- **Text options**: `custom_text`, `custom_text_size`
+- **Image options**: `image_path` (local file or URL)
+- **Transforms**: `magnification` (zoom factor), `translation_x`, `translation_y` (offset from center)
+- **Styling**: `rounded_corners` (bool), `corner_radius`, `color_mode` ("rgb" or "bw")
+
+For complete examples, see `src/tests/demo_image_input.py`.
 
 ---
 

@@ -1134,7 +1134,11 @@ class NetworkPlotter:
             b_channel = img_array[:, :, 2]
         else:
             # Grayscale - use same for all channels
-            r_channel = g_channel = b_channel = img_array[:, :, 0] if len(img_array.shape) == 3 else img_array
+            if len(img_array.shape) == 3:
+                grayscale = img_array[:, :, 0]
+            else:
+                grayscale = img_array
+            r_channel = g_channel = b_channel = grayscale
         
         # Offset between rectangles for overlap effect
         offset_x = width * 0.15
