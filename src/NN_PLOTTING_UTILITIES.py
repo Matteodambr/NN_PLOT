@@ -808,6 +808,11 @@ class NetworkPlotter:
             
             # Calculate heights for all layers in this level
             layer_heights = {}
+            
+            # Constants for ImageInput sizing
+            DEFAULT_IMAGE_SIZE_MULTIPLIER = 15  # Default size multiplier for ImageInput rectangles
+            RGB_CHANNEL_OFFSET_RATIO = 0.15  # Offset ratio for separated RGB channels
+            
             for layer_id in layer_ids:
                 layer = network.get_layer(layer_id)
                 
@@ -818,15 +823,19 @@ class NetworkPlotter:
                         size_factor = layer.custom_size
                     else:
                         # Default size based on aspect ratio
+                        # Validate height is non-zero to prevent division by zero
+                        if layer.height <= 0:
+                            raise ValueError(f"ImageInput layer {layer_id} has invalid height: {layer.height}")
+                        
                         aspect_ratio = layer.width / layer.height
                         if aspect_ratio > 1:
-                            size_factor = self.config.neuron_radius * 15
+                            size_factor = self.config.neuron_radius * DEFAULT_IMAGE_SIZE_MULTIPLIER
                         else:
-                            size_factor = self.config.neuron_radius * 15 / aspect_ratio
+                            size_factor = self.config.neuron_radius * DEFAULT_IMAGE_SIZE_MULTIPLIER / aspect_ratio
                     
                     # For RGB separated channels, account for offset
                     if layer.display_mode == "image" and layer.color_mode == "rgb" and layer.separate_channels:
-                        offset = size_factor * 0.15
+                        offset = size_factor * RGB_CHANNEL_OFFSET_RATIO
                         total_height = size_factor + 2 * offset
                     else:
                         total_height = size_factor
