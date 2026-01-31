@@ -640,6 +640,16 @@ class NetworkPlotter:
             # X position for this layer (apply spacing multiplier)
             x_pos = i * self.config.layer_spacing * self.config.layer_spacing_multiplier
             
+            # Special handling for ImageInput layers - they only need a single position
+            # for connection purposes, regardless of their visual representation
+            if isinstance(layer, ImageInput):
+                # Single position at center for connections
+                positions = [(x_pos, 0.0)]
+                self.neuron_positions[layer_id] = positions
+                self.layer_positions[layer_id] = (x_pos, 0.0)
+                self.collapsed_layers[layer_id] = False
+                continue
+            
             # Get actual number of neurons
             if isinstance(layer, FullyConnectedLayer):
                 actual_neurons = layer.num_neurons
@@ -707,6 +717,12 @@ class NetworkPlotter:
         for level_idx, layer_ids in enumerate(levels):
             for layer_id in layer_ids:
                 layer = network.get_layer(layer_id)
+                
+                # Special handling for ImageInput layers - they only need a single position
+                if isinstance(layer, ImageInput):
+                    layer_display_counts[layer_id] = 1
+                    self.collapsed_layers[layer_id] = False
+                    continue
                 
                 # Get actual number of neurons
                 if isinstance(layer, FullyConnectedLayer):
