@@ -122,7 +122,7 @@ def test_image_input_validation():
     
     # Test missing image_path for image mode
     try:
-        ImageInput(height=224, width=224, channels=3, display_mode="single_image")
+        ImageInput(height=224, width=224, channels=3, display_mode="image")
         assert False, "Should have raised ValueError for missing image_path"
     except ValueError as e:
         print(f"✓ Validation test 4 passed: {e}")

@@ -996,15 +996,16 @@ class NetworkPlotter:
             self._draw_text_mode_rectangle(ax, layer, center_x, center_y, 
                                           rect_width, rect_height, layer_style)
         
-        elif layer.display_mode == 'single_image':
-            # Draw a single rectangle with the image
-            self._draw_single_image_rectangle(ax, layer, center_x, center_y,
-                                             rect_width, rect_height, layer_style)
-        
-        elif layer.display_mode == 'rgb_channels':
-            # Draw 3 overlapped rectangles, one for each RGB channel
-            self._draw_rgb_channels_rectangles(ax, layer, center_x, center_y,
-                                              rect_width, rect_height, layer_style)
+        elif layer.display_mode == 'image':
+            # Check if we should separate RGB channels
+            if layer.color_mode == 'rgb' and layer.separate_channels:
+                # Draw 3 overlapped rectangles, one for each RGB channel
+                self._draw_rgb_channels_rectangles(ax, layer, center_x, center_y,
+                                                  rect_width, rect_height, layer_style)
+            else:
+                # Draw a single rectangle with the image
+                self._draw_single_image_rectangle(ax, layer, center_x, center_y,
+                                                 rect_width, rect_height, layer_style)
     
     def _draw_text_mode_rectangle(self, ax: plt.Axes, layer: ImageInput,
                                   center_x: float, center_y: float,

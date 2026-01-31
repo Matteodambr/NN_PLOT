@@ -684,11 +684,12 @@ CNN networks now support the **`ImageInput`** layer, which provides flexible vis
 
 ### ImageInput Features
 
-The `ImageInput` layer supports three display modes:
+The `ImageInput` layer supports two display modes:
 
 1. **Text Mode**: Display a rounded rectangle with dimension text
-2. **Single Image Mode**: Display an actual image from a file or URL
-3. **RGB Channels Mode**: Separate RGB channels into 3 overlapped rectangles
+2. **Image Mode**: Display an actual image from a file or URL
+   - **BW (Black & White)**: Converts image to grayscale
+   - **RGB**: Shows color image with option to separate channels
 
 ```python
 from NN_DEFINITION_UTILITIES import ImageInput, NeuralNetwork, FullyConnectedLayer
@@ -729,8 +730,9 @@ img_input = ImageInput(
     height=224,
     width=224,
     channels=3,
-    display_mode="single_image",
+    display_mode="image",
     image_path="path/to/image.jpg",  # Local file or URL
+    color_mode="rgb",                 # RGB or BW
     magnification=1.5,                # Zoom in 1.5x
     translation_x=0.2,                # Shift right
     translation_y=-0.1,               # Shift up
@@ -742,29 +744,33 @@ img_input = ImageInput(
     height=224,
     width=224,
     channels=1,
-    display_mode="single_image",
+    display_mode="image",
     image_path="color_image.jpg",
     color_mode="bw"  # Convert to grayscale
 )
 
-# Example 4: RGB channel separation
+# Example 4: RGB channel separation (3 overlapped rectangles)
 img_input = ImageInput(
     height=224,
     width=224,
     channels=3,
-    display_mode="rgb_channels",
-    image_path="image.jpg"  # Shows 3 overlapped rectangles
+    display_mode="image",
+    image_path="image.jpg",
+    color_mode="rgb",
+    separate_channels=True  # Shows 3 overlapped rectangles
 )
 ```
 
 ### ImageInput Parameters
 
 - **Basic dimensions**: `height`, `width`, `channels` (1 for BW, 3 for RGB)
-- **Display mode**: `"text"`, `"single_image"`, or `"rgb_channels"`
+- **Display mode**: `"text"` or `"image"`
 - **Text options**: `custom_text`, `custom_text_size`
 - **Image options**: `image_path` (local file or URL)
+- **Color mode**: `"bw"` (black & white) or `"rgb"` (color)
+- **Channel separation**: `separate_channels` (bool) - only for RGB mode
 - **Transforms**: `magnification` (zoom factor), `translation_x`, `translation_y` (offset from center)
-- **Styling**: `rounded_corners` (bool), `corner_radius`, `color_mode` ("rgb" or "bw")
+- **Styling**: `rounded_corners` (bool), `corner_radius`
 
 For complete examples, see `src/tests/demo_image_input.py`.
 

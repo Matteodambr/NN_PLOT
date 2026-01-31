@@ -15,7 +15,7 @@ from NN_PLOTTING_UTILITIES import NetworkPlotter, PlotConfig
 
 
 def test_single_image_mode():
-    """Test ImageInput with actual image display in single_image mode."""
+    """Test ImageInput with actual image display in image mode."""
     import matplotlib as mpl
     
     # Create network
@@ -24,14 +24,15 @@ def test_single_image_mode():
     # Path to test image
     image_path = os.path.join(os.path.dirname(__file__), "test_images", "kitten_like.png")
     
-    # Add ImageInput layer with single_image mode
+    # Add ImageInput layer with image mode (RGB, single image)
     img_input = ImageInput(
         height=224,
         width=224,
         channels=3,
         name="Image Input",
-        display_mode="single_image",
+        display_mode="image",
         image_path=image_path,
+        color_mode="rgb",
         magnification=1.0,
         rounded_corners=True
     )
@@ -76,8 +77,9 @@ def test_single_image_with_magnification():
         width=200,
         channels=3,
         name="Zoomed Input",
-        display_mode="single_image",
+        display_mode="image",
         image_path=image_path,
+        color_mode="rgb",
         magnification=1.5,
         translation_x=0.0,
         translation_y=0.0,
@@ -118,8 +120,9 @@ def test_single_image_with_translation():
         width=200,
         channels=3,
         name="Offset Input",
-        display_mode="single_image",
+        display_mode="image",
         image_path=image_path,
+        color_mode="rgb",
         magnification=1.2,
         translation_x=0.3,   # Move right
         translation_y=-0.3,  # Move up
@@ -160,7 +163,7 @@ def test_bw_conversion():
         width=224,
         channels=1,
         name="BW Input",
-        display_mode="single_image",
+        display_mode="image",
         image_path=image_path,
         color_mode="bw",
         rounded_corners=True
@@ -194,14 +197,16 @@ def test_rgb_channels_mode():
     
     image_path = os.path.join(os.path.dirname(__file__), "test_images", "gradient.png")
     
-    # Add ImageInput with rgb_channels mode
+    # Add ImageInput with separate_channels=True
     img_input = ImageInput(
         height=150,
         width=200,
         channels=3,
         name="RGB Channels",
-        display_mode="rgb_channels",
+        display_mode="image",
         image_path=image_path,
+        color_mode="rgb",
+        separate_channels=True,
         rounded_corners=True
     )
     network.add_layer(img_input, is_input=True)
@@ -239,8 +244,9 @@ def test_sharp_corners():
         width=200,
         channels=3,
         name="Sharp Corners",
-        display_mode="single_image",
+        display_mode="image",
         image_path=image_path,
+        color_mode="rgb",
         rounded_corners=False
     )
     network.add_layer(img_input, is_input=True)

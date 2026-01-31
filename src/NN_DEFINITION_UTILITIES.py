@@ -292,10 +292,9 @@ class ImageInput(InputLayer):
     This is used for image data (2D/3D) inputs, typically for CNN architectures.
     ImageInput layers are automatically treated as root layers (no parents).
     
-    The layer can display in several modes:
+    The layer can display in two modes:
     - Text mode: Shows a rounded rectangle with custom text
-    - Single image mode: Displays an actual image (with magnification/translation options)
-    - RGB channels mode: Separates RGB channels into 3 overlapped rectangles
+    - Image mode: Displays an actual image (with color and channel options)
     
     Attributes:
         height (int): Height of the input image in pixels.
@@ -305,23 +304,25 @@ class ImageInput(InputLayer):
         layer_id (str): Unique identifier for this layer (auto-generated).
         
         # Display options
-        display_mode (str): How to render the layer - 'text', 'single_image', or 'rgb_channels'.
+        display_mode (str): How to render the layer - 'text' or 'image'.
                            Default: 'text'.
         custom_text (Optional[str]): Text to display when display_mode='text'. If None, 
                                      shows dimension info. Supports LaTeX.
         custom_text_size (float): Font size for custom text. Default: 12.
         
-        # Image options (when display_mode is 'single_image' or 'rgb_channels')
+        # Image options (when display_mode is 'image')
         image_path (Optional[str]): Path or URL to the image file.
         magnification (float): Magnification factor for image cropping (>1 zooms in). Default: 1.0.
         translation_x (float): Horizontal offset from center (-1 to 1, where 1 = half width). Default: 0.
         translation_y (float): Vertical offset from center (-1 to 1, where 1 = half height). Default: 0.
+        color_mode (str): 'bw' or 'rgb' - whether to display as black & white or RGB.
+                         Default: 'rgb' if channels==3, 'bw' if channels==1.
+        separate_channels (bool): When True and color_mode='rgb', displays 3 overlapped rectangles
+                                 (one per channel). When False, displays single image. Default: False.
         
         # Styling options
         rounded_corners (bool): Whether to use rounded corners for the rectangle(s). Default: True.
         corner_radius (float): Radius of rounded corners (used by plotting). Default: 0.15.
-        color_mode (str): 'rgb' or 'bw' - whether to display as RGB or convert to black & white.
-                         Default: 'rgb' if channels==3, 'bw' if channels==1.
     
     Example:
         >>> # Simple text display
@@ -335,11 +336,12 @@ class ImageInput(InputLayer):
         ...     custom_text_size=14
         ... )
         
-        >>> # Display actual image
+        >>> # Display actual image (single)
         >>> img_input = ImageInput(
         ...     height=224, width=224, channels=3,
-        ...     display_mode='single_image',
+        ...     display_mode='image',
         ...     image_path='https://example.com/cat.jpg',
+        ...     color_mode='rgb',
         ...     magnification=1.5,
         ...     translation_x=0.2
         ... )
@@ -347,8 +349,18 @@ class ImageInput(InputLayer):
         >>> # Display RGB channels separately
         >>> img_input = ImageInput(
         ...     height=224, width=224, channels=3,
-        ...     display_mode='rgb_channels',
-        ...     image_path='path/to/image.jpg'
+        ...     display_mode='image',
+        ...     image_path='path/to/image.jpg',
+        ...     color_mode='rgb',
+        ...     separate_channels=True
+        ... )
+        
+        >>> # Display as black and white
+        >>> img_input = ImageInput(
+        ...     height=224, width=224, channels=1,
+        ...     display_mode='image',
+        ...     image_path='color_image.jpg',
+        ...     color_mode='bw'
         ... )
     """
     height: int
@@ -367,11 +379,12 @@ class ImageInput(InputLayer):
     magnification: float = 1.0
     translation_x: float = 0.0
     translation_y: float = 0.0
+    color_mode: Optional[str] = None
+    separate_channels: bool = False
     
     # Styling options
     rounded_corners: bool = True
     corner_radius: float = 0.15
-    color_mode: Optional[str] = None
     
     def __post_init__(self):
         """Validate the layer configuration after initialization."""
@@ -382,15 +395,15 @@ class ImageInput(InputLayer):
             raise ValueError("Channels must be 1 (BW) or 3 (RGB)")
         
         # Validate display_mode
-        if self.display_mode not in ("text", "single_image", "rgb_channels"):
+        if self.display_mode not in ("text", "image"):
             raise ValueError(
-                "display_mode must be 'text', 'single_image', or 'rgb_channels'"
+                "display_mode must be 'text' or 'image'"
             )
         
-        # Validate that image_path is provided for image modes
-        if self.display_mode in ("single_image", "rgb_channels") and self.image_path is None:
+        # Validate that image_path is provided for image mode
+        if self.display_mode == "image" and self.image_path is None:
             raise ValueError(
-                f"image_path must be provided when display_mode='{self.display_mode}'"
+                "image_path must be provided when display_mode='image'"
             )
         
         # Validate magnification
@@ -411,10 +424,16 @@ class ImageInput(InputLayer):
         if self.color_mode not in ("rgb", "bw"):
             raise ValueError("color_mode must be 'rgb' or 'bw'")
         
-        # Validate consistency between channels and display_mode
-        if self.display_mode == "rgb_channels" and self.channels != 3:
+        # Validate consistency: separate_channels only makes sense for RGB
+        if self.separate_channels and self.color_mode != "rgb":
             raise ValueError(
-                "display_mode='rgb_channels' requires channels=3"
+                "separate_channels=True requires color_mode='rgb'"
+            )
+        
+        # Validate consistency: separate_channels requires channels=3
+        if self.separate_channels and self.channels != 3:
+            raise ValueError(
+                "separate_channels=True requires channels=3"
             )
         
         # Initialize the base Layer class

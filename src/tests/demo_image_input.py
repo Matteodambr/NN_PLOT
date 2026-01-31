@@ -116,8 +116,9 @@ def demo_comparison():
     img2 = ImageInput(
         height=150, width=200, channels=3,
         name="Single Image",
-        display_mode="single_image",
-        image_path=image_path
+        display_mode="image",
+        image_path=image_path,
+        color_mode="rgb"
     )
     network2.add_layer(img2, is_input=True)
     out2 = FullyConnectedLayer(num_neurons=10, activation="Softmax", name="Output")
@@ -132,8 +133,10 @@ def demo_comparison():
     img3 = ImageInput(
         height=150, width=200, channels=3,
         name="RGB Channels",
-        display_mode="rgb_channels",
-        image_path=image_path
+        display_mode="image",
+        image_path=image_path,
+        color_mode="rgb",
+        separate_channels=True
     )
     network3.add_layer(img3, is_input=True)
     out3 = FullyConnectedLayer(num_neurons=10, activation="Softmax", name="Output")
@@ -167,8 +170,9 @@ def demo_image_transforms():
         width=200,
         channels=3,
         name="Transformed Image",
-        display_mode="single_image",
+        display_mode="image",
         image_path=image_path,
+        color_mode="rgb",
         magnification=2.0,      # 2x zoom
         translation_x=0.25,     # Shift right
         translation_y=-0.25,    # Shift up
@@ -216,13 +220,14 @@ def print_usage_examples():
        custom_text="224 x 224 x 3"
    )
 
-2. Display Actual Image:
+2. Display Actual Image (RGB):
    
    img_input = ImageInput(
        height=224, width=224, channels=3,
        name="Photo Input",
-       display_mode="single_image",
+       display_mode="image",
        image_path="path/to/image.jpg",  # or URL
+       color_mode="rgb",
        rounded_corners=True
    )
 
@@ -230,8 +235,9 @@ def print_usage_examples():
    
    img_input = ImageInput(
        height=224, width=224, channels=3,
-       display_mode="single_image",
+       display_mode="image",
        image_path="image.jpg",
+       color_mode="rgb",
        magnification=1.5,  # 1.5x zoom
        translation_x=0.2,   # optional: shift right
        translation_y=-0.1   # optional: shift up
@@ -241,7 +247,7 @@ def print_usage_examples():
    
    img_input = ImageInput(
        height=224, width=224, channels=1,
-       display_mode="single_image",
+       display_mode="image",
        image_path="color_image.jpg",
        color_mode="bw"  # converts to grayscale
    )
@@ -250,16 +256,19 @@ def print_usage_examples():
    
    img_input = ImageInput(
        height=224, width=224, channels=3,
-       display_mode="rgb_channels",
-       image_path="image.jpg"
+       display_mode="image",
+       image_path="image.jpg",
+       color_mode="rgb",
+       separate_channels=True  # separates into 3 rectangles
    )
 
 6. Sharp Corners (no rounding):
    
    img_input = ImageInput(
        height=224, width=224, channels=3,
-       display_mode="single_image",
+       display_mode="image",
        image_path="image.jpg",
+       color_mode="rgb",
        rounded_corners=False
    )
 """)
