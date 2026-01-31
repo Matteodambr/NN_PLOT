@@ -864,10 +864,12 @@ class NetworkPlotter:
                     layer_height = layer_heights[layer_id]
                     num_neurons_display = layer_display_counts[layer_id]
                     
-                    # Center of this layer
+                    # Calculate the center position of this layer
+                    # current_y tracks the top edge, so we subtract half the layer height to get center
                     vertical_offset = current_y - layer_height / 2
                     
-                    # Start position for neurons in this layer
+                    # For neuron positioning, we need to start at the top of the layer's neuron span
+                    # The neurons span from (center - height/2) to (center + height/2)
                     y_start = vertical_offset - layer_height / 2
                     positions = []
                     for j in range(num_neurons_display):
@@ -877,7 +879,7 @@ class NetworkPlotter:
                     temp_positions[layer_id] = positions
                     temp_layer_positions[layer_id] = (x_pos, vertical_offset)
                     
-                    # Move down for next layer
+                    # Move down for next layer (full height + padding)
                     current_y -= (layer_height + vertical_padding)
                 
                 # Second pass: find actual top and bottom bounds of all layers
