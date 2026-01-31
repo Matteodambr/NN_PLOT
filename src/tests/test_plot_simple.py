@@ -9,6 +9,11 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 from src.NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer, VectorInput, VectorOutput
 from src.NN_PLOTTING_UTILITIES import plot_network, PlotConfig
 
+# Create output directory at project root
+project_root = os.path.join(os.path.dirname(__file__), '..', '..')
+output_dir = os.path.join(project_root, "test_outputs")
+os.makedirs(output_dir, exist_ok=True)
+
 # Create a simple network
 nn = NeuralNetwork(name="Test Network")
 nn.add_layer(VectorInput(num_features=4, name="Input"))
@@ -23,7 +28,7 @@ print("\nGenerating plot...")
 plot_network(
     nn,
     title="Simple Test Network",
-    save_path=os.path.join(os.path.dirname(__file__), "test_outputs", "test_plot.png"),
+    save_path=os.path.join(output_dir, "test_plot.png"),
     show=False  # Don't show, just save
 )
 

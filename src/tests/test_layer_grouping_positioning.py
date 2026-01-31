@@ -15,7 +15,9 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 from src.NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer, VectorInput, VectorOutput
 from src.NN_PLOTTING_UTILITIES import plot_network, PlotConfig, LayerGroup
 
-output_dir = os.path.join(os.path.dirname(__file__), "test_outputs", "layer_grouping_final")
+# Create output directory at project root
+project_root = os.path.join(os.path.dirname(__file__), '..', '..')
+output_dir = os.path.join(project_root, "test_outputs", "layer_grouping_final")
 os.makedirs(output_dir, exist_ok=True)
 
 print("="*70)

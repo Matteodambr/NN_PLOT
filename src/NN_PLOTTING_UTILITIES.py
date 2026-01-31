@@ -6,10 +6,24 @@ represented as circles and connections as lines.
 Currently supports visualization of feedforward neural networks with fully connected layers.
 """
 
-import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
-from matplotlib.collections import LineCollection
-import matplotlib as mpl
+# Check for matplotlib availability
+_MATPLOTLIB_AVAILABLE = True
+_MATPLOTLIB_CHECK_DONE = False
+_MATPLOTLIB_ERROR_MSG = None
+
+try:
+    import matplotlib.pyplot as plt
+    import matplotlib.patches as mpatches
+    from matplotlib.collections import LineCollection
+    import matplotlib as mpl
+except ImportError as e:
+    _MATPLOTLIB_AVAILABLE = False
+    _MATPLOTLIB_ERROR_MSG = str(e)
+    # Create dummy objects to prevent import errors in other parts
+    plt = None
+    mpatches = None
+    mpl = None
+
 from typing import List, Dict, Tuple, Optional, Set
 from dataclasses import dataclass, field
 
@@ -2057,6 +2071,35 @@ class NetworkPlotter:
             ax.plot([x_min, x_max], [y, y], color=color, linewidth=linewidth, zorder=10)
 
 
+def _check_matplotlib_available():
+    """
+    Check if matplotlib is available and show a helpful error message if not.
+    This check is performed only once (on first call to plot_network).
+    """
+    global _MATPLOTLIB_CHECK_DONE
+    
+    if _MATPLOTLIB_CHECK_DONE:
+        return
+    
+    _MATPLOTLIB_CHECK_DONE = True
+    
+    if not _MATPLOTLIB_AVAILABLE:
+        error_msg = """
+================================================================================
+ERROR: matplotlib is not installed
+================================================================================
+
+This library requires matplotlib to generate network visualizations.
+Please install it using:
+
+    pip install matplotlib
+
+Then try again.
+================================================================================
+"""
+        raise ImportError(error_msg)
+
+
 # Convenience function for quick plotting
 def plot_network(
     network: NeuralNetwork,
@@ -2102,6 +2145,9 @@ def plot_network(
         >>> plot_network(nn, title="Network 2", ax=axes[1])
         >>> plt.show()
     """
+    # Check if matplotlib is available (only checked once)
+    _check_matplotlib_available()
+    
     # Force show=False when ax is provided (user must call plt.show() explicitly)
     if ax is not None:
         show = False

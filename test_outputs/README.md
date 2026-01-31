@@ -2,6 +2,14 @@
 
 This directory contains generated plots from test scripts.
 
+## Prerequisites
+
+Before running the tests, ensure you have matplotlib installed:
+
+```bash
+pip install matplotlib
+```
+
 ## Generating Plots
 
 The plots are generated dynamically when you run the test scripts. They are **not** committed to the repository as they are large binary files.

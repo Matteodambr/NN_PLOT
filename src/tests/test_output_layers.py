@@ -7,6 +7,20 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
+# Check for matplotlib before importing plotting utilities
+try:
+    import matplotlib
+except ImportError:
+    print("=" * 60)
+    print("ERROR: matplotlib is not installed")
+    print("=" * 60)
+    print("\nThis test requires matplotlib to generate plots.")
+    print("Please install it using:")
+    print("\n    pip install matplotlib")
+    print("\nThen run this test again.")
+    print("=" * 60)
+    sys.exit(1)
+
 from src.NN_DEFINITION_UTILITIES import (
     NeuralNetwork, VectorInput, FullyConnectedLayer, 
     VectorOutput, GenericOutput
