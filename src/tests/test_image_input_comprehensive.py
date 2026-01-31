@@ -218,6 +218,82 @@ def test_rgb_separated_mode(cat_image_path):
     print(f"✓ Test 4: RGB separated mode saved to {output_path}")
 
 
+def test_multiple_inputs_different_sizes(cat_image_path):
+    """Test 5: Multiple ImageInput layers with same image but different sizes."""
+    import matplotlib as mpl
+    
+    network = NeuralNetwork(name="Multi-Input Different Sizes")
+    
+    # Create three ImageInput layers with the same image but different sizes
+    # Small input
+    small_input = ImageInput(
+        height=64,
+        width=64,
+        channels=3,
+        name="Small Input",
+        display_mode="image",
+        image_path=cat_image_path,
+        color_mode="rgb",
+        custom_size=1.5,  # Small size
+        rounded_corners=True
+    )
+    network.add_layer(small_input, is_input=True)
+    
+    # Medium input
+    medium_input = ImageInput(
+        height=128,
+        width=128,
+        channels=3,
+        name="Medium Input",
+        display_mode="image",
+        image_path=cat_image_path,
+        color_mode="rgb",
+        custom_size=2.5,  # Medium size
+        rounded_corners=True
+    )
+    network.add_layer(medium_input, is_input=True)
+    
+    # Large input
+    large_input = ImageInput(
+        height=224,
+        width=224,
+        channels=3,
+        name="Large Input",
+        display_mode="image",
+        image_path=cat_image_path,
+        color_mode="rgb",
+        custom_size=3.5,  # Large size
+        rounded_corners=True
+    )
+    network.add_layer(large_input, is_input=True)
+    
+    # Add a merge layer that takes all three inputs
+    merge_layer = FullyConnectedLayer(num_neurons=20, activation="ReLU", name="Merge")
+    network.add_layer(merge_layer, parent_ids=[small_input.layer_id, medium_input.layer_id, large_input.layer_id])
+    
+    # Add output layer
+    output = FullyConnectedLayer(num_neurons=10, activation="Softmax", name="Output")
+    network.add_layer(output, parent_ids=[merge_layer.layer_id])
+    
+    # Plot
+    config = PlotConfig(figsize=(14, 10))
+    plotter = NetworkPlotter(config)
+    mpl.rcParams['text.usetex'] = False
+    
+    output_path = os.path.join(os.path.dirname(__file__), "../test_outputs/comprehensive_multi_input.png")
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    
+    plotter.plot_network(
+        network,
+        title="ImageInput - Multiple Inputs with Different Sizes",
+        save_path=output_path,
+        show=False,
+        dpi=150
+    )
+    
+    print(f"✓ Test 5: Multiple inputs with different sizes saved to {output_path}")
+
+
 if __name__ == "__main__":
     print("Running Comprehensive ImageInput Tests with Real Cat Images")
     print("=" * 70)
@@ -231,6 +307,7 @@ if __name__ == "__main__":
     test_bw_mode(cat_image_path)
     test_rgb_single_mode(cat_image_path)
     test_rgb_separated_mode(cat_image_path)
+    test_multiple_inputs_different_sizes(cat_image_path)
     
     print("=" * 70)
     print("All comprehensive tests completed! ✓")
@@ -239,3 +316,4 @@ if __name__ == "__main__":
     print("  2. comprehensive_bw_mode.png - Black & white catto.jpg")
     print("  3. comprehensive_rgb_single.png - Full color RGB catto.jpg")
     print("  4. comprehensive_rgb_separated.png - RGB channels separated from catto.jpg")
+    print("  5. comprehensive_multi_input.png - Multiple inputs with different sizes")
