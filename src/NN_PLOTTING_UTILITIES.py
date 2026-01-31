@@ -284,7 +284,7 @@ class PlotConfig:
     layer_names_show_dim: bool = True
     layer_names_show_activation: bool = False
     layer_names_align_bottom: bool = False
-    layer_names_offset: float = 0.4
+    layer_names_offset: float = 0.8  # Increased from 0.4 to prevent overlap
     layer_names_bottom_offset: float = 2.0
     layer_names_show_box: bool = True
     layer_names_line_styles: List[str] = field(default_factory=list)
@@ -1140,33 +1140,48 @@ class NetworkPlotter:
             fontsize = 10
         
         # Calculate text bounds to ensure it fits
-        # Create temporary text to measure size
-        temp_text = ax.text(
+        # We need to iterate to find the right font size
+        max_iterations = 10
+        for iteration in range(max_iterations):
+            # Create temporary text to measure size
+            temp_text = ax.text(
+                center_x, center_y, text,
+                ha='center', va='center',
+                fontsize=fontsize,
+                fontname=self.config.font_family,
+                visible=False  # Make invisible for measurement
+            )
+            
+            # Get text bounding box in data coordinates
+            renderer = ax.figure.canvas.get_renderer()
+            bbox = temp_text.get_window_extent(renderer=renderer)
+            bbox_data = bbox.transformed(ax.transData.inverted())
+            text_width = bbox_data.width
+            text_height = bbox_data.height
+            
+            # Remove temporary text
+            temp_text.remove()
+            
+            # Calculate required padding (20% margin on each side for safety)
+            required_width = text_width * 1.4
+            required_height = text_height * 1.4
+            
+            # Check if text fits
+            if required_width <= width and required_height <= height:
+                break
+            
+            # Scale down the font size
+            scale_factor = min(width / required_width, height / required_height) * 0.95
+            fontsize = fontsize * scale_factor
+        
+        # Draw the final text with correct size
+        ax.text(
             center_x, center_y, text,
             ha='center', va='center',
             fontsize=fontsize,
             fontname=self.config.font_family,
             zorder=11
         )
-        
-        # Get text bounding box in data coordinates
-        renderer = ax.figure.canvas.get_renderer()
-        bbox = temp_text.get_window_extent(renderer=renderer)
-        bbox_data = bbox.transformed(ax.transData.inverted())
-        text_width = bbox_data.width
-        text_height = bbox_data.height
-        
-        # Calculate required padding (10% margin on each side)
-        required_width = text_width * 1.2
-        required_height = text_height * 1.2
-        
-        # If text doesn't fit, scale down the font size
-        if required_width > width or required_height > height:
-            scale_factor = min(width / required_width, height / required_height)
-            fontsize = fontsize * scale_factor
-            temp_text.set_fontsize(fontsize)
-        
-        # Text is already drawn with temp_text, no need to draw again
     
     def _draw_single_image_rectangle(self, ax: plt.Axes, layer: ImageInput,
                                      center_x: float, center_y: float,
@@ -2081,7 +2096,22 @@ class NetworkPlotter:
                 label_y = min_y - self.config.layer_names_bottom_offset
             else:
                 # Position below each individual layer
-                label_y = y - (len(self.neuron_positions[layer_id]) * self.config.neuron_spacing / 2) - self.config.layer_names_offset
+                base_offset = self.config.layer_names_offset
+                
+                # For ImageInput layers, add extra offset based on rectangle size
+                if isinstance(layer, ImageInput):
+                    # Get the ImageInput bounds to calculate proper offset
+                    if layer_id in self.image_input_bounds:
+                        bounds = self.image_input_bounds[layer_id]
+                        _, _, bottom_y, _ = bounds
+                        # Position label below the rectangle with extra spacing
+                        label_y = bottom_y - base_offset
+                    else:
+                        # Fallback to regular calculation with extra offset
+                        label_y = y - base_offset * 2
+                else:
+                    # Regular layers - use neuron positions
+                    label_y = y - (len(self.neuron_positions[layer_id]) * self.config.neuron_spacing / 2) - base_offset
             
             # Configure bbox based on show_box setting
             bbox_props = dict(boxstyle='round,pad=0.5', facecolor='wheat', alpha=0.5) if self.config.layer_names_show_box else None
