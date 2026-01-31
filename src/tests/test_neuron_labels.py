@@ -14,7 +14,7 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
-from src.NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer, VectorInput
+from src.NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer, VectorInput, VectorOutput
 from src.NN_PLOTTING_UTILITIES import plot_network, PlotConfig
 
 # Create output directory at project root
@@ -43,7 +43,7 @@ def test_basic_text_labels():
     ))
     
     # Output layer with labels on the right
-    nn.add_layer(FullyConnectedLayer(
+    nn.add_layer(VectorOutput(
         num_neurons=2,
         activation="softmax",
         name="Output",
@@ -85,7 +85,7 @@ def test_latex_math_labels():
     ))
     
     # Output with LaTeX
-    nn.add_layer(FullyConnectedLayer(
+    nn.add_layer(VectorOutput(
         num_neurons=2,
         activation="sigmoid",
         name="Output",
@@ -133,7 +133,7 @@ def test_complex_latex():
     ))
     
     # Output with Greek letters and symbols
-    nn.add_layer(FullyConnectedLayer(
+    nn.add_layer(VectorOutput(
         num_neurons=3,
         activation="softmax",
         name="Output",
@@ -168,7 +168,7 @@ def test_left_and_right_positioning():
         label_position="left"
     ))
     nn_left.add_layer(FullyConnectedLayer(3, activation="relu", name="Hidden"))
-    nn_left.add_layer(FullyConnectedLayer(2, activation="softmax", name="Output"))
+    nn_left.add_layer(VectorOutput(2, activation="softmax", name="Output"))
     
     config = PlotConfig(show_neuron_text_labels=True)
     plot_network(
@@ -184,7 +184,7 @@ def test_left_and_right_positioning():
     nn_right = NeuralNetwork("Right Labels")
     nn_right.add_layer(VectorInput(num_features=4, name="Input"))
     nn_right.add_layer(FullyConnectedLayer(3, activation="relu", name="Hidden"))
-    nn_right.add_layer(FullyConnectedLayer(
+    nn_right.add_layer(VectorOutput(
         num_neurons=2,
         activation="softmax",
         name="Output",
@@ -231,7 +231,7 @@ def test_mixed_labels():
     ))
     
     # Output with labels
-    nn.add_layer(FullyConnectedLayer(
+    nn.add_layer(VectorOutput(
         num_neurons=3,
         activation="softmax",
         name="Output",
@@ -262,7 +262,7 @@ def test_show_hide_control():
         label_position="left"
     ))
     nn.add_layer(FullyConnectedLayer(4, activation="relu", name="Hidden"))
-    nn.add_layer(FullyConnectedLayer(
+    nn.add_layer(VectorOutput(
         num_neurons=2,
         activation="softmax",
         name="Output",
@@ -305,7 +305,7 @@ def test_with_neuron_indices():
         label_position="left"
     ))
     nn.add_layer(FullyConnectedLayer(3, activation="relu", name="Hidden"))
-    nn.add_layer(FullyConnectedLayer(
+    nn.add_layer(VectorOutput(
         num_neurons=2,
         activation="softmax",
         name="Output",
@@ -349,7 +349,7 @@ def test_with_collapsed_layers():
     ))
     
     # Output with labels
-    nn.add_layer(FullyConnectedLayer(
+    nn.add_layer(VectorOutput(
         num_neurons=5,
         activation="softmax",
         name="Output",
@@ -385,7 +385,7 @@ def test_font_sizes():
         label_position="left"
     ))
     nn.add_layer(FullyConnectedLayer(3, activation="relu", name="Hidden"))
-    nn.add_layer(FullyConnectedLayer(
+    nn.add_layer(VectorOutput(
         num_neurons=2,
         activation="softmax",
         name="Output",
@@ -456,7 +456,7 @@ def test_realistic_example():
     ))
     
     # Output predictions
-    nn.add_layer(FullyConnectedLayer(
+    nn.add_layer(VectorOutput(
         num_neurons=3,
         activation="softmax",
         name="Risk Category",

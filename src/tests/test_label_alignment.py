@@ -11,7 +11,7 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
-from src.NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer, VectorInput
+from src.NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer, VectorInput, VectorOutput
 from src.NN_PLOTTING_UTILITIES import plot_network, PlotConfig, LayerStyle
 
 # Create output directory
@@ -97,7 +97,7 @@ def test_per_layer_alignment():
         label_position="left"
     ))
     nn.add_layer(FullyConnectedLayer(3, activation="relu", name="Hidden"))
-    nn.add_layer(FullyConnectedLayer(
+    nn.add_layer(VectorOutput(
         num_neurons=2,
         name="Output",
         neuron_labels=["Class A", "Class B"],
@@ -142,7 +142,7 @@ def test_latex_alignment():
         label_position="left"
     ))
     nn.add_layer(FullyConnectedLayer(3, activation="relu", name="Hidden"))
-    nn.add_layer(FullyConnectedLayer(
+    nn.add_layer(VectorOutput(
         num_neurons=2,
         name="Output",
         neuron_labels=[r"$\hat{y}_1$", r"$\hat{y}_2$"],

@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 import matplotlib
 matplotlib.use('Agg')  # Use non-interactive backend
 
-from src.NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer, VectorInput
+from src.NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer, VectorInput, VectorOutput
 from src.NN_PLOTTING_UTILITIES import plot_network, PlotConfig, LayerGroup
 
 # Create output directory at project root
@@ -98,7 +98,7 @@ def test_combined_single_and_group():
     nn.add_layer(VectorInput(num_features=6, name="Input"))
     nn.add_layer(FullyConnectedLayer(8, activation="relu", name="Hidden1"))
     nn.add_layer(FullyConnectedLayer(8, activation="relu", name="Hidden2"))
-    nn.add_layer(FullyConnectedLayer(4, activation="softmax", name="Output"))
+    nn.add_layer(VectorOutput(4, activation="softmax", name="Output"))
     
     config = PlotConfig(
         show_layer_names=True,
@@ -137,7 +137,7 @@ def test_label_spacing():
     nn = NeuralNetwork("Label Spacing Test")
     nn.add_layer(VectorInput(num_features=6, name="Layer1"))
     nn.add_layer(FullyConnectedLayer(6, activation="relu", name="Layer2"))
-    nn.add_layer(FullyConnectedLayer(4, activation="softmax", name="Layer3"))
+    nn.add_layer(VectorOutput(4, activation="softmax", name="Layer3"))
     
     config = PlotConfig(
         show_layer_names=True,

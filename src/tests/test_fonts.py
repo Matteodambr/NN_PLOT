@@ -55,7 +55,7 @@ print("\n" + "=" * 60)
 print("TESTING FONTS WITH NEURAL NETWORK LABELS")
 print("=" * 60)
 
-from src.NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer, VectorInput
+from src.NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer, VectorInput, VectorOutput
 from src.NN_PLOTTING_UTILITIES import plot_network, PlotConfig
 
 # Create output directory at project root
@@ -73,7 +73,7 @@ nn.add_layer(VectorInput(
     label_position="left"
 ))
 nn.add_layer(FullyConnectedLayer(3, activation="relu", name="Hidden"))
-nn.add_layer(FullyConnectedLayer(
+nn.add_layer(VectorOutput(
     num_neurons=2,
     name="Output",
     neuron_labels=[r"$\hat{y}_1$", r"$\hat{y}_2$"],

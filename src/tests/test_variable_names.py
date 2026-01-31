@@ -6,7 +6,7 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
-from src.NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer, VectorInput
+from src.NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer, VectorInput, VectorOutput
 from src.NN_PLOTTING_UTILITIES import plot_network, PlotConfig, LayerStyle
 
 # Create a simple network
@@ -18,7 +18,7 @@ nn.add_layer(input_layer)
 hidden = FullyConnectedLayer(num_neurons=6, activation="relu", name="Hidden")
 nn.add_layer(hidden, parent_ids=[input_layer.layer_id])
 
-output = FullyConnectedLayer(num_neurons=3, activation="softmax", name="Output")
+output = VectorOutput(num_neurons=3, activation="softmax", name="Output")
 nn.add_layer(output, parent_ids=[hidden.layer_id])
 
 # Configure with variable names

@@ -7,7 +7,7 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
-from src.NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer, VectorInput
+from src.NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer, VectorInput, GenericOutput
 from src.NN_PLOTTING_UTILITIES import plot_network, PlotConfig
 
 # Create output directory at project root
@@ -40,14 +40,10 @@ nn.add_layer(FullyConnectedLayer(
     name="Hidden"
 ))
 
-nn.add_layer(FullyConnectedLayer(
-    num_neurons=2,
-    name="Output",
-    neuron_labels=[
-        r"$\mathbf{y}_1$",
-        r"$\boldsymbol{\hat{y}}_2$"
-    ],
-    label_position="right"
+nn.add_layer(GenericOutput(
+    output_size=2,
+    text="Classification",
+    name="Output"
 ))
 
 config = PlotConfig(
@@ -92,11 +88,10 @@ nn_compare.add_layer(VectorInput(
 
 nn_compare.add_layer(FullyConnectedLayer(3, activation="relu", name="Hidden"))
 
-nn_compare.add_layer(FullyConnectedLayer(
-    num_neurons=2,
-    name="Output",
-    neuron_labels=[r"$y$", r"$\mathbf{y}$"],
-    label_position="right"
+nn_compare.add_layer(GenericOutput(
+    output_size=2,
+    text="Comparison",
+    name="Output"
 ))
 
 plot_network(

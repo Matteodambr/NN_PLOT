@@ -6,7 +6,7 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
-from src.NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer, VectorInput
+from src.NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer, VectorInput, VectorOutput
 from src.NN_PLOTTING_UTILITIES import plot_network, PlotConfig
 
 print("=" * 60)
@@ -82,7 +82,7 @@ nn_mixed = NeuralNetwork("Mixed Network")
 nn_mixed.add_layer(VectorInput(num_features=3, name="SmallInput"))
 nn_mixed.add_layer(FullyConnectedLayer(num_neurons=50, activation="relu", name="LargeHidden"))
 nn_mixed.add_layer(FullyConnectedLayer(num_neurons=8, activation="relu", name="MediumHidden"))
-nn_mixed.add_layer(FullyConnectedLayer(num_neurons=2, activation="softmax", name="SmallOutput"))
+nn_mixed.add_layer(VectorOutput(num_neurons=2, activation="softmax", name="SmallOutput"))
 
 config_mixed = PlotConfig(
     figsize=(14, 8),
@@ -104,7 +104,7 @@ print("\n[Test 5] Collapsed layer with neuron indices shown")
 nn_labeled = NeuralNetwork("Labeled Network")
 nn_labeled.add_layer(VectorInput(num_features=4, name="Input"))
 nn_labeled.add_layer(FullyConnectedLayer(num_neurons=30, activation="relu", name="Hidden"))
-nn_labeled.add_layer(FullyConnectedLayer(num_neurons=2, activation="softmax", name="Output"))
+nn_labeled.add_layer(VectorOutput(num_neurons=2, activation="softmax", name="Output"))
 
 config_labeled = PlotConfig(
     figsize=(14, 8),

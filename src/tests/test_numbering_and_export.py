@@ -18,7 +18,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 from src.NN_DEFINITION_UTILITIES import (
     NeuralNetwork,
     FullyConnectedLayer,
-    VectorInput
+    VectorInput,
+    VectorOutput
 )
 
 from src.NN_PLOTTING_UTILITIES import plot_network, PlotConfig
@@ -156,7 +157,7 @@ def test_combined_features():
     nn.add_layer(VectorInput(num_features=10, name="Input"))
     nn.add_layer(FullyConnectedLayer(8, activation="relu", name="Hidden 1"))
     nn.add_layer(FullyConnectedLayer(6, activation="relu", name="Hidden 2"))
-    nn.add_layer(FullyConnectedLayer(3, activation="softmax", name="Output"))
+    nn.add_layer(VectorOutput(3, activation="softmax", name="Output"))
     
     # Collapsed layers with reversed numbering
     config_collapsed = PlotConfig(

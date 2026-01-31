@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 import matplotlib
 matplotlib.use('Agg')  # Use non-interactive backend
 
-from src.NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer, VectorInput
+from src.NN_DEFINITION_UTILITIES import NeuralNetwork, FullyConnectedLayer, VectorInput, VectorOutput
 from src.NN_PLOTTING_UTILITIES import plot_network, PlotConfig, LayerGroup
 
 # Create output directory at project root
@@ -186,7 +186,7 @@ def test_encoder_decoder():
     latent_id = nn.add_layer(FullyConnectedLayer(3, activation="relu", name="Latent"), parent_ids=[enc2_id])
     dec1_id = nn.add_layer(FullyConnectedLayer(5, activation="relu", name="Dec1"), parent_ids=[latent_id])
     dec2_id = nn.add_layer(FullyConnectedLayer(8, activation="relu", name="Dec2"), parent_ids=[dec1_id])
-    nn.add_layer(FullyConnectedLayer(10, activation="sigmoid", name="Output"), parent_ids=[dec2_id])
+    nn.add_layer(VectorOutput(10, activation="sigmoid", name="Output"), parent_ids=[dec2_id])
     
     config = PlotConfig(
         background_color='white',
@@ -241,7 +241,7 @@ def test_customization():
     nn = NeuralNetwork("Customization Test")
     l1_id = nn.add_layer(VectorInput(num_features=6, name="Layer1"))
     l2_id = nn.add_layer(FullyConnectedLayer(6, activation="relu", name="Layer2"), parent_ids=[l1_id])
-    nn.add_layer(FullyConnectedLayer(4, activation="softmax", name="Layer3"), parent_ids=[l2_id])
+    nn.add_layer(VectorOutput(4, activation="softmax", name="Layer3"), parent_ids=[l2_id])
     
     config = PlotConfig(
         background_color='white',
